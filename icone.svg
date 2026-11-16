@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Curvas de nível e um alinhamento com estacas (mesmo ícone do EstudosCivil3D.exe) -->
+  <defs><clipPath id="c"><rect width="64" height="64" rx="14"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="64" height="64" fill="#1d4c4f"/>
+    <g fill="none" stroke-linejoin="round">
+      <path d="M8 23C8 11 23 5 36 6C49 7 58 13 57 23C56 33 45 37 32 36C19 35 8 34 8 23Z" stroke="#cfe3e0" stroke-width="2" stroke-opacity=".75"/>
+      <path d="M15 22.5C15 14.5 25.5 10.5 35 11.5C44.5 12.5 50 16.5 49 23C48 29.5 40.5 31.5 32 30.5C23 29.5 15 29 15 22.5Z" stroke="#cfe3e0" stroke-width="2"/>
+      <path d="M23.5 21.5C23.5 17.5 28.5 15.5 33.5 15.5C38.5 15.5 41.5 18.5 40.5 22.5C39.5 25.5 35.5 26.5 31.5 26C27 25.5 23.5 24.5 23.5 21.5Z" fill="#4fc4bb" fill-opacity=".35" stroke="#ffffff" stroke-width="3"/>
+    </g>
+    <g fill="none" stroke="#f39a2c" stroke-linecap="round">
+      <path d="M3 48C22 45 42 43 61 33" stroke-width="3.5"/>
+      <path d="M8.2 43.6L9.3 50.7M14 42.7L15 49.8M19.7 41.8L20.9 48.9M25.5 40.8L26.8 47.8M31.2 39.6L32.8 46.6M36.9 38.3L38.7 45.2M42.6 36.6L44.7 43.5M48.2 34.7L50.7 41.5M53.8 32.5L56.7 39.1" stroke-width="2"/>
+    </g>
+  </g>
+</svg>
