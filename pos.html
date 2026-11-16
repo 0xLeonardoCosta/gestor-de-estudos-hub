@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestor de Estudos · Pós BIM Infraestrutura</title>
+  <style>
+/* styles.css — identidade visual, temas claro/escuro e responsividade */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --surface-2: #f0f3f6; --line: #dfe4ea; --line-2: #c9d1da;
+  --text: #16202b; --text-2: #4d5b6a; --text-3: #6d7a88;
+  --accent: #0f5ea8; --accent-ink: #ffffff; --accent-soft: #e3effa; --accent-text: #0c4f8f;
+  --series: #2a78d6; --series-dim: #a9c8ee;
+  --ok: #1a7f4b; --ok-soft: #e0f3e8; --warn: #9a5b00; --warn-soft: #fdf0d5; --bad: #b3261e; --bad-soft: #fbe4e2; --info: #0c4f8f; --info-soft: #e3effa;
+  --side: #10263b; --side-text: #c8d6e3; --side-active: #1d4467;
+  --shadow: 0 1px 2px rgba(16, 38, 59, .06), 0 4px 14px rgba(16, 38, 59, .05);
+  --radius: 10px; color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: #0f151b; --surface: #182029; --surface-2: #202a35; --line: #2b3744; --line-2: #3a4857;
+  --text: #e8edf2; --text-2: #b4c0cc; --text-3: #8c9aa8;
+  --accent: #4d9be6; --accent-ink: #08131d; --accent-soft: #1b3550; --accent-text: #8fc1f2;
+  --series: #3987e5; --series-dim: #2c4a6b;
+  --ok: #5ccb8f; --ok-soft: #173a29; --warn: #f0b755; --warn-soft: #40300f; --bad: #f58a82; --bad-soft: #47201d; --info: #8fc1f2; --info-soft: #1b3550;
+  --side: #0b1118; --side-text: #b4c0cc; --side-active: #1b3550;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { font-size: 15px; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.45; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; }
+h2 { font-size: 1.2rem; } h3 { font-size: 1rem; } p { margin: .4rem 0; }
+a { color: var(--accent-text); }
+small { color: var(--text-3); font-size: .82rem; }
+.muted { color: var(--text-3); } .nowrap { white-space: nowrap; } .center { text-align: center; justify-content: center; } .strike { text-decoration: line-through; color: var(--text-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.spacer { flex: 1; } .grow { flex: 1; min-width: 0; } .pad { padding: .5rem .25rem; margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- layout ---------- */
+#sidebar { position: fixed; inset: 0 auto 0 0; width: 240px; background: var(--side); color: var(--side-text); display: flex; flex-direction: column; gap: .75rem; padding: 1rem .75rem; z-index: 30; overflow-y: auto; }
+.brand { display: flex; align-items: center; gap: .6rem; padding: 0 .25rem; color: #fff; }
+.brand small { display: block; color: var(--side-text); }
+.logo { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #2a78d6, #1baf7a); display: grid; place-items: center; font-weight: 800; color: #fff; }
+#course-switch { width: 100%; background: rgba(255, 255, 255, .08); color: #fff; border-color: rgba(255, 255, 255, .15); }
+#course-switch option { color: #111; }
+#nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+#nav a { display: flex; align-items: center; gap: .65rem; padding: .55rem .65rem; border-radius: 8px; color: var(--side-text); text-decoration: none; font-size: .95rem; }
+#nav a:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+#nav a.active { background: var(--side-active); color: #fff; font-weight: 600; }
+#nav .ic { width: 1.2rem; text-align: center; opacity: .85; }
+#theme-btn { color: var(--side-text); border-color: rgba(255, 255, 255, .15); justify-content: center; }
+#theme-btn:hover { background: rgba(255, 255, 255, .07); }
+#content { margin-left: 240px; min-height: 100vh; }
+#topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: .75rem; padding: .7rem 1.5rem; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+#topbar h1 { font-size: 1.15rem; flex: 1; }
+#menu-btn { display: none; }
+#timer-chip { font-variant-numeric: tabular-nums; background: var(--accent); color: var(--accent-ink); padding: .3rem .7rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .85rem; }
+#view { padding: 1.25rem 1.5rem 3rem; max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+#scrim { display: none; }
+
+/* ---------- componentes ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow); min-width: 0; }
+.card > header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .6rem; flex-wrap: wrap; }
+.card > header h3 small { font-weight: 400; margin-left: .3rem; }
+.card.alert { border-color: var(--bad); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.span2 { grid-column: 1 / -1; }
+.toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: .75rem 1rem; flex-wrap: wrap; }
+.btns, .badges, .acts { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: .35rem; font: inherit; font-size: .92rem; font-weight: 500; padding: .5rem .85rem; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--accent-text); }
+.btn.ghost:hover { background: var(--accent-soft); }
+.btn.danger { color: var(--bad); } .btn.danger:not(.ghost) { background: var(--bad); border-color: var(--bad); color: #fff; }
+[data-theme="dark"] .btn.danger:not(.ghost) { color: #1b0706; }
+.btn.sm { padding: .28rem .6rem; font-size: .84rem; } .btn.lg { padding: .7rem 1.2rem; font-size: 1rem; }
+.icon-btn { font: inherit; width: 30px; height: 30px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: var(--text-2); cursor: pointer; display: inline-grid; place-items: center; flex: none; }
+.icon-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); } .icon-btn:disabled { opacity: .3; cursor: default; }
+.link { font: inherit; font-weight: 600; background: none; border: 0; padding: 0; color: var(--text); cursor: pointer; text-align: left; }
+.link:hover { color: var(--accent-text); text-decoration: underline; }
+.badge { display: inline-flex; align-items: center; gap: .25rem; font-size: .76rem; font-weight: 600; padding: .12rem .5rem; border-radius: 999px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.badge.ok, .badge.st-dominado { background: var(--ok-soft); color: var(--ok); } .badge.warn, .badge.st-revisao { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); } .badge.info, .badge.st-aula, .badge.st-pratica, .badge.kind { background: var(--info-soft); color: var(--info); }
+.count { font-size: .78rem; background: var(--surface-2); color: var(--text-2); border-radius: 999px; padding: .05rem .5rem; font-weight: 600; }
+.progress { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.progress span { display: block; height: 100%; border-radius: 999px; background: var(--series); transition: width .3s; }
+.progress.ok span { background: var(--ok); }
+.empty { text-align: center; color: var(--text-3); padding: 1.4rem .5rem; } .empty p { margin: 0 0 .6rem; }
+.notice { display: flex; gap: 1rem; align-items: center; justify-content: space-between; padding: .8rem 1rem; border-radius: var(--radius); background: var(--warn-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+.risk { color: var(--bad); font-weight: 500; font-size: .86rem; display: block; }
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: .88rem; padding: .42rem .8rem; border: 0; background: transparent; color: var(--text-2); cursor: pointer; }
+.seg button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* listas e tabelas */
+.list { list-style: none; margin: 0; padding: 0; }
+.list > li { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-top: 1px solid var(--line); }
+.list > li:first-child { border-top: 0; }
+.list.compact > li { padding: .4rem 0; }
+.list li strong { display: block; overflow-wrap: anywhere; } .list li small { display: block; }
+.list.done strong { font-weight: 500; } .tick { color: var(--ok); font-weight: 700; }
+h4.sub { margin: 1rem 0 .35rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); }
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.table th { text-align: left; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); font-weight: 600; padding: .4rem .6rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.table td { padding: .55rem .6rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.table tr:last-child td { border-bottom: 0; }
+.table td small { display: block; } .table .num { text-align: right; font-variant-numeric: tabular-nums; } .table td.num small { display: inline; }
+.table td.num .btn { margin-left: .25rem; }
+.w-prog { min-width: 150px; }
+
+/* formulários */
+input, select, textarea { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; padding: .5rem .6rem; width: 100%; min-width: 0; }
+textarea { resize: vertical; }
+input[type=checkbox] { width: 1.05rem; height: 1.05rem; flex: none; accent-color: var(--accent); padding: 0; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.field { grid-column: 1 / -1; display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.field.half, .check.half { grid-column: span 1; }
+.field label { font-size: .84rem; font-weight: 600; color: var(--text-2); }
+.field.inline { flex-direction: row; align-items: center; gap: .5rem; } .field.inline select { width: auto; max-width: min(60vw, 420px); }
+.check { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; cursor: pointer; font-size: .92rem; }
+.form-error { grid-column: 1 / -1; color: var(--bad); font-weight: 500; margin: 0; }
+.inline-add { display: flex; gap: .4rem; margin-top: .4rem; }
+.avail { display: grid; grid-template-columns: repeat(7, 1fr); gap: .4rem; margin: .5rem 0; }
+.avail input { padding: .4rem .3rem; text-align: center; }
+
+/* modal e toast */
+.overlay { position: fixed; inset: 0; z-index: 100; background: rgba(8, 16, 24, .55); display: grid; place-items: center; padding: 1rem; }
+.modal { background: var(--surface); border-radius: 14px; width: min(560px, 100%); max-height: calc(100vh - 2rem); display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); border: 1px solid var(--line); }
+.modal.wide { width: min(720px, 100%); }
+.modal > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1.1rem; border-bottom: 1px solid var(--line); }
+.modal > header h2 { font-size: 1.05rem; overflow-wrap: anywhere; }
+.modal-body { padding: 1rem 1.1rem; overflow-y: auto; }
+.modal > footer { display: flex; gap: .5rem; padding: .8rem 1.1rem; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.why-list { padding-left: 1.2rem; } .why-list li { margin: .25rem 0; }
+.toasts { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: .4rem; align-items: center; width: max-content; max-width: calc(100vw - 2rem); }
+.toast { background: var(--text); color: var(--bg); padding: .6rem 1rem; border-radius: 8px; font-size: .92rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); animation: pop .2s; }
+.toast.bad { background: var(--bad); color: #fff; } .toast.warn { background: var(--warn); color: #fff; }
+@keyframes pop { from { transform: translateY(8px); opacity: 0; } }
+.tip { position: absolute; z-index: 300; background: var(--text); color: var(--bg); font-size: .8rem; padding: .3rem .55rem; border-radius: 6px; pointer-events: none; max-width: 280px; }
+
+/* ---------- painel ---------- */
+.course-head h2 { font-size: 1.25rem; }
+.pace { font-size: .92rem; color: var(--text-2); } .pace.bad { color: var(--bad); }
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .85rem 1rem; display: flex; flex-direction: column; gap: .35rem; box-shadow: var(--shadow); min-width: 0; }
+.stat .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); font-weight: 600; }
+.stat strong { font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; } .stat strong.sm { font-size: 1.3rem; }
+.stat strong em { font-style: normal; font-size: 1rem; color: var(--text-3); font-weight: 500; }
+.stat .badge { align-self: flex-start; white-space: normal; }
+.mini-stats, .grade-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: .5rem; }
+.grade-sum { grid-template-columns: repeat(4, 1fr); }
+.mini-stats div, .grade-sum div { background: var(--surface-2); border-radius: 8px; padding: .55rem .6rem; }
+.mini-stats strong, .grade-sum strong { display: block; font-size: 1.25rem; font-variant-numeric: tabular-nums; } .mini-stats span, .grade-sum span { font-size: .78rem; color: var(--text-3); }
+.shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; } .shortcuts .btn { justify-content: center; }
+.score { flex: none; width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; font: inherit; font-weight: 700; font-size: .88rem; background: var(--accent-soft); color: var(--accent-text); border: 0; font-variant-numeric: tabular-nums; }
+button.score { cursor: pointer; } button.score:hover { outline: 2px solid var(--accent); }
+.plan-item .why { color: var(--text-2); }
+.plan-item.k-A .score { background: var(--bad-soft); color: var(--bad); } .plan-item.k-R .score { background: var(--warn-soft); color: var(--warn); }
+details.day { border-top: 1px solid var(--line); } details.day:first-of-type { border-top: 0; }
+details.day > summary { display: flex; justify-content: space-between; gap: 1rem; padding: .6rem .25rem; cursor: pointer; font-weight: 600; list-style: none; }
+details.day > summary::before { content: '▸'; color: var(--text-3); margin-right: .5rem; } details.day[open] > summary::before { content: '▾'; }
+details.day > summary span:first-child { flex: 1; } details.day > summary .muted { font-weight: 400; }
+details.day > .list { padding-left: 1rem; }
+details.explain > summary { cursor: pointer; } details.explain summary h3 { display: inline; } details.explain li { margin: .3rem 0; }
+
+/* ---------- gráficos ---------- */
+.chart.cols .plot { position: relative; height: 170px; margin: .4rem 0 0 2.6rem; }
+.chart .tick { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); }
+.chart .tick span { position: absolute; right: 100%; margin-right: .4rem; transform: translateY(-50%); font-size: .72rem; color: var(--text-3); white-space: nowrap; }
+.chart .goal-line { position: absolute; left: 0; right: 0; border-top: 1px solid var(--text-2); z-index: 2; pointer-events: none; }
+.chart .goal-line span { position: absolute; right: 0; bottom: 2px; font-size: .7rem; color: var(--text-2); background: var(--surface); padding: 0 .2rem; }
+.chart .bars { position: absolute; inset: 0; display: flex; align-items: flex-end; }
+.chart .col { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; cursor: default; }
+.chart .col .bar { width: min(24px, 60%); background: var(--series); border-radius: 4px 4px 0 0; min-height: 0; }
+.chart .col .bar.dim { background: var(--series-dim); }
+.chart .col:hover .bar, .chart .col:focus .bar, .hrow:hover .bar { filter: brightness(1.15); }
+.chart .xlabels { display: flex; margin-left: 2.6rem; } .chart .xlabels span { flex: 1; text-align: center; font-size: .72rem; color: var(--text-3); padding-top: .3rem; }
+.hbars { display: flex; flex-direction: column; gap: .45rem; }
+.hrow { display: grid; grid-template-columns: minmax(90px, 34%) 1fr 4.2rem; gap: .6rem; align-items: center; font-size: .86rem; }
+.hrow .hl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); } .hrow .hv { text-align: right; font-variant-numeric: tabular-nums; }
+.htrack { position: relative; height: 14px; background: var(--surface-2); border-radius: 0 4px 4px 0; }
+.htrack .bar { height: 100%; background: var(--series); border-radius: 0 4px 4px 0; } .htrack .bar.ok { background: var(--ok); }
+.htrack .ref, .grade-bar i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); }
+.chart-note { font-size: .78rem; color: var(--text-3); margin: .3rem 0 0; } .ref-key { display: inline-block; width: 2px; height: .8rem; background: var(--text); vertical-align: middle; margin-right: .3rem; }
+.grade-bar { position: relative; height: 10px; background: var(--surface-2); border-radius: 999px; margin: .3rem 0 .8rem; }
+.grade-bar span { display: block; height: 100%; border-radius: 999px; background: var(--series); } .grade-bar span.ok { background: var(--ok); }
+
+/* ---------- grade ---------- */
+.disc { padding: 0; overflow: hidden; }
+.disc-head { width: 100%; display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.disc-head:hover { background: var(--surface-2); }
+.disc-head strong, .disc-head small { display: block; } .caret { color: var(--text-3); width: 1rem; }
+.disc-prog { display: flex; align-items: center; gap: .6rem; margin-top: .35rem; max-width: 380px; } .disc-prog.wide { max-width: 520px; }
+.disc-prog .progress { flex: 1; } .disc-prog span { font-size: .8rem; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.disc-body { padding: .25rem 1rem 1rem 2.75rem; border-top: 1px solid var(--line); } .disc-body > .btns { margin: .75rem 0 .25rem; }
+.topic.complete .link { color: var(--text-2); }
+.stepper { display: flex; align-items: center; gap: .2rem; font-size: .84rem; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stepper .icon-btn { border-color: var(--line); }
+
+/* ---------- kanban ---------- */
+.kanban { display: grid; grid-template-columns: repeat(5, minmax(175px, 1fr)); gap: .75rem; overflow-x: auto; padding-bottom: .5rem; align-items: start; }
+.kanban.three { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+.kcol { background: var(--surface-2); border-radius: var(--radius); padding: .6rem; border: 2px solid transparent; min-height: 200px; }
+.kcol.over { border-color: var(--accent); }
+.kcol h3 { font-size: .86rem; padding: .2rem .3rem .6rem; display: flex; justify-content: space-between; align-items: center; }
+.kcol h3 .count { background: var(--surface); }
+.kcards { display: flex; flex-direction: column; gap: .5rem; }
+.kcard { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line-2); border-radius: 8px; padding: .6rem .65rem .35rem; cursor: grab; display: flex; flex-direction: column; gap: .3rem; box-shadow: var(--shadow); }
+.kcard.p3 { border-left-color: var(--warn); } .kcard.p1 { border-left-color: var(--line); }
+.kcard.dragging { opacity: .45; } .kcard .link { font-size: .92rem; }
+.kmeta { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; font-size: .78rem; } .knote { font-size: .82rem; color: var(--text-2); margin: 0; }
+.kacts { display: flex; justify-content: space-between; border-top: 1px solid var(--line); margin-top: .2rem; padding-top: .2rem; }
+
+/* ---------- calendário ---------- */
+.cal-title { margin-left: .5rem; text-transform: capitalize; }
+.cal-head { display: grid; grid-template-columns: repeat(7, 1fr); font-size: .76rem; text-transform: uppercase; color: var(--text-3); font-weight: 600; text-align: center; padding: .3rem 0; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cell, .wday { font: inherit; color: inherit; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .35rem; min-height: 96px; cursor: pointer; display: flex; flex-direction: column; gap: .2rem; overflow: hidden; min-width: 0; }
+.cell:hover, .wday:hover { border-color: var(--accent); }
+.cell.out { opacity: .45; } .cell.today, .wday.today { border: 2px solid var(--accent); } .cell.has-assess, .wday.has-assess { background: var(--bad-soft); }
+.dn { font-weight: 700; font-size: .84rem; } .today .dn { color: var(--accent-text); }
+.evs { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ev { display: block; font-size: .72rem; line-height: 1.3; padding: .08rem .35rem; border-radius: 4px; background: var(--surface-2); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev.assess { background: var(--bad); color: #fff; font-weight: 600; } [data-theme="dark"] .ev.assess { color: #1b0706; }
+.ev.close { background: var(--warn-soft); color: var(--warn); } .ev.open { background: var(--info-soft); color: var(--info); } .ev.done { background: var(--ok-soft); color: var(--ok); }
+.ev.plan { border-left: 3px solid var(--series); } .ev.plan.k-P { border-left-color: #1baf7a; } .ev.plan.k-R { border-left-color: #eda100; } .ev.plan.k-A { border-left-color: var(--bad); }
+.cal.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; } .wday { min-height: 260px; padding: .5rem; } .wday .ev { white-space: normal; }
+.wd { font-size: .8rem; color: var(--text-3); } .wd strong { color: var(--text); margin-left: .2rem; }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; font-size: .8rem; color: var(--text-3); } .legend .ev { display: inline-block; }
+
+/* ---------- cronômetro ---------- */
+.timer-card { display: flex; flex-direction: column; gap: .9rem; }
+.timer-big { font-size: clamp(2.6rem, 9vw, 4.2rem); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: .02em; padding: .4rem 0; }
+.timer-big.run { color: var(--accent-text); }
+.goal { margin-bottom: .9rem; } .goal-top { display: flex; justify-content: space-between; margin-bottom: .3rem; } .goal-top small { font-weight: 400; }
+
+/* ---------- responsivo ---------- */
+@media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  #sidebar { transform: translateX(-100%); transition: transform .2s; width: 264px; }
+  .nav-open #sidebar { transform: none; } .nav-open #scrim { display: block; position: fixed; inset: 0; background: rgba(8, 16, 24, .5); z-index: 25; }
+  #content { margin-left: 0; } #menu-btn { display: inline-grid; border-color: var(--line); }
+  #topbar { padding: .6rem .9rem; } #view { padding: 1rem .9rem 3rem; }
+  .grid2 { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stats .stat:last-child { grid-column: 1 / -1; }
+  .cal.week { grid-template-columns: 1fr; } .wday { min-height: 0; flex-direction: row; gap: .75rem; } .wday .wd { width: 4.6rem; flex: none; } .wday .evs { flex: 1; }
+  .disc-body { padding-left: 1rem; } .disc-head { flex-wrap: wrap; } .disc-head .badges { width: 100%; padding-left: 1.75rem; }
+}
+@media (max-width: 560px) {
+  html { font-size: 14.5px; }
+  .list > li { flex-wrap: wrap; } .list > li .acts { width: 100%; padding-left: 3.05rem; } .list.compact > li .acts, .topics > li .acts { padding-left: 0; }
+  .topic .stepper { margin-left: auto; }
+  .grade-sum { grid-template-columns: 1fr 1fr; } .mini-stats strong { font-size: 1.1rem; }
+  .form { grid-template-columns: 1fr; } .field.half, .check.half { grid-column: 1 / -1; }
+  .avail { grid-template-columns: repeat(4, 1fr); }
+  .cell { min-height: 62px; padding: .2rem; } .cell .ev { font-size: 0; padding: 0; height: 5px; border-radius: 3px; border: 0; background: var(--series); } .cell .ev.assess { background: var(--bad); } .cell .ev.done { background: var(--ok); } .cell .ev.close { background: var(--warn); } .cell .ev.open { display: none; }
+  .inline-add { flex-wrap: wrap; } .modal > footer .btn { flex: 1; justify-content: center; } .modal > footer .spacer { display: none; }
+  .toolbar .btns .btn { flex: 1; justify-content: center; } .toolbar > .btns { width: 100%; }
+  .hrow { grid-template-columns: minmax(70px, 30%) 1fr 3.8rem; }
+}
+#hub-link { display: block; margin: 0 0 4px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, .15); border-radius: 8px; color: var(--side-text); text-decoration: none; font-size: .9rem; }
+#hub-link:hover { background: rgba(255, 255, 255, .07); }
+</style>
+</head>
+<body>
+  <aside id="sidebar">
+    <a id="hub-link" href="index.html">‹ Gestor de estudos</a>
+    <div class="brand"><span class="logo" aria-hidden="true">B</span><div><strong>Gestor de Estudos</strong><small>Pós-graduação EAD</small></div></div>
+    <label class="sr-only" for="course-switch">Curso ativo</label>
+    <select id="course-switch"></select>
+    <nav id="nav" aria-label="Módulos"></nav>
+    <button id="theme-btn" class="btn ghost" type="button"></button>
+  </aside>
+  <div id="scrim"></div>
+  <div id="content">
+    <header id="topbar">
+      <button id="menu-btn" class="icon-btn" type="button" aria-label="Abrir menu">☰</button>
+      <h1 id="view-title"></h1>
+      <a id="timer-chip" href="#cronometro" hidden title="Cronômetro em andamento"></a>
+    </header>
+    <main id="view"></main>
+  </div>
+
+  <script src="js/armazenamento.js"></script>
+  <script src="js/pos-nucleo.js"></script>
+  <script>
+/* ui.js — componentes de interface: modal, formulário genérico, confirmação, toast, gráficos */
+const UI = (() => {
+  const e = U.esc;
+  const stack = [];
+
+  function modal({ title, body, footer = '', wide = false, onClose }) {
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = `<div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${e(title)}">
+      <header><h2>${e(title)}</h2><button class="icon-btn" data-close aria-label="Fechar">✕</button></header>
+      <div class="modal-body"></div><footer></footer></div>`;
+    const m = { el: ov, body: ov.querySelector('.modal-body'), footer: ov.querySelector('footer'), onClose,
+      set(b, f) { if (b !== undefined) this.body.innerHTML = b; if (f !== undefined) { this.footer.innerHTML = f; this.footer.hidden = !f; } },
+      close() { const i = stack.indexOf(m); if (i >= 0) stack.splice(i, 1); ov.remove(); if (m.onClose) m.onClose(); } };
+    m.set(body, footer);
+    ov.addEventListener('mousedown', ev => { if (ev.target === ov) m.close(); });
+    ov.addEventListener('click', ev => { if (ev.target.closest('[data-close]')) m.close(); });
+    document.body.appendChild(ov); stack.push(m);
+    const f = ov.querySelector('input:not([type=hidden]),select,textarea'); if (f) setTimeout(() => f.focus(), 30);
+    return m;
+  }
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && stack.length) stack[stack.length - 1].close(); });
+  const closeAll = () => stack.slice().forEach(m => m.close());
+
+  function field(f) {
+    const id = 'f_' + f.name, v = f.value ?? '';
+    const attrs = `id="${id}" name="${f.name}" ${f.required ? 'required' : ''}`;
+    let input;
+    if (f.type === 'select') input = `<select ${attrs}>${f.options.map(([val, lab]) => `<option value="${e(val)}" ${String(val) === String(v) ? 'selected' : ''}>${e(lab)}</option>`).join('')}</select>`;
+    else if (f.type === 'textarea') input = `<textarea ${attrs} rows="${f.rows || 3}" placeholder="${e(f.placeholder || '')}">${e(v)}</textarea>`;
+    else if (f.type === 'checkbox') return `<label class="check ${f.half ? 'half' : ''}"><input type="checkbox" name="${f.name}" ${v ? 'checked' : ''}> <span>${e(f.label)}</span></label>`;
+    else input = `<input type="${f.type || 'text'}" ${attrs} value="${e(v)}" placeholder="${e(f.placeholder || '')}" ${f.min !== undefined ? `min="${f.min}"` : ''} ${f.max !== undefined ? `max="${f.max}"` : ''} ${f.type === 'number' ? `step="${f.step || 'any'}" inputmode="decimal"` : ''}>`;
+    return `<div class="field ${f.half ? 'half' : ''}"><label for="${id}">${e(f.label)}</label>${input}${f.hint ? `<small>${e(f.hint)}</small>` : ''}</div>`;
+  }
+
+  /** Formulário genérico de cadastro/edição/exclusão. */
+  function form({ title, fields, submit = 'Salvar', onSubmit, onDelete, deleteLabel = 'Excluir', intro = '' }) {
+    const m = modal({ title, body: `${intro ? `<p class="muted">${intro}</p>` : ''}<form class="form" novalidate>${fields.map(field).join('')}<p class="form-error" hidden></p></form>`,
+      footer: `${onDelete ? `<button class="btn danger ghost" data-del>${e(deleteLabel)}</button>` : ''}<span class="spacer"></span><button class="btn ghost" data-close>Cancelar</button><button class="btn primary" data-ok>${e(submit)}</button>` });
+    const fm = m.body.querySelector('form'), err = fm.querySelector('.form-error');
+    const go = () => {
+      const vals = {};
+      for (const f of fields) {
+        const el = fm.elements[f.name];
+        if (f.type === 'checkbox') vals[f.name] = el.checked;
+        else if (f.type === 'number') vals[f.name] = el.value === '' ? null : U.num(el.value, null);
+        else vals[f.name] = el.value.trim();
+        if (f.required && (vals[f.name] === '' || vals[f.name] === null)) { err.textContent = `Preencha o campo "${f.label}".`; err.hidden = false; el.focus(); return; }
+        if (f.type === 'number' && vals[f.name] !== null && ((f.min !== undefined && vals[f.name] < f.min) || (f.max !== undefined && vals[f.name] > f.max))) { err.textContent = `"${f.label}" deve estar entre ${f.min ?? '−∞'} e ${f.max ?? '∞'}.`; err.hidden = false; el.focus(); return; }
+      }
+      const r = onSubmit(vals);
+      if (typeof r === 'string') { err.textContent = r; err.hidden = false; return; }
+      m.close();
+    };
+    fm.addEventListener('submit', ev => { ev.preventDefault(); go(); });
+    fm.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.tagName !== 'TEXTAREA') { ev.preventDefault(); go(); } });
+    m.footer.addEventListener('click', ev => {
+      if (ev.target.closest('[data-ok]')) go();
+      if (ev.target.closest('[data-del]')) confirm('Excluir este item? Esta ação não pode ser desfeita.', () => { m.close(); onDelete(); });
+    });
+    return m;
+  }
+
+  function confirm(msg, onYes, yes = 'Excluir') {
+    const m = modal({ title: 'Confirmar', body: `<p>${e(msg)}</p>`, footer: `<span class="spacer"></span><button class="btn ghost" data-close>Cancelar</button><button class="btn danger" data-yes>${e(yes)}</button>` });
+    m.footer.querySelector('[data-yes]').addEventListener('click', () => { m.close(); onYes(); });
+  }
+
+  function toast(msg, kind = 'ok') {
+    let box = document.querySelector('.toasts');
+    if (!box) { box = document.createElement('div'); box.className = 'toasts'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
+    const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg; box.appendChild(t); while (box.children.length > 2) box.firstChild.remove();
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  /* ---------- pequenos componentes ---------- */
+  const badge = (text, kind = 'mute') => `<span class="badge ${kind}">${e(text)}</span>`;
+  const progress = (pct, kind = '') => `<div class="progress ${kind}" role="progressbar" aria-valuenow="${Math.round(pct * 100)}" aria-valuemin="0" aria-valuemax="100"><span style="width:${U.clamp(pct * 100, 0, 100)}%"></span></div>`;
+  const empty = (text, action = '') => `<div class="empty"><p>${e(text)}</p>${action}</div>`;
+  const SIT = { aprovado: 'ok', risco: 'bad', cursando: 'info', concluida: 'ok', futura: 'mute' };
+  const sitBadge = s => badge((s.key === 'risco' ? '⚠ ' : s.key === 'aprovado' ? '✓ ' : '') + s.label, SIT[s.key]);
+  const prioBadge = p => p === 3 ? badge('▲ Alta', 'warn') : p === 1 ? badge('▽ Baixa', 'mute') : '';
+  const discOptions = (blank = '— Geral —') => { const c = L.course(); return [['', blank]].concat(c ? L.disciplines(c.id).map(d => [d.id, `${d.order}. ${d.name}`]) : []); };
+  const topicOptions = (did, blank = '— Nenhum —') => [['', blank]].concat(did ? L.topics(did).map(t => [t.id, t.name]) : []);
+  const levelOptions = obj => Object.entries(obj);
+
+  /* ---------- gráficos (HTML/CSS, uma série, com dica ao passar o mouse) ---------- */
+  function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+  /** Colunas verticais. data: [{label, value, tip, dim}] ; opts: {fmt, goal, goalLabel, max} */
+  function columns(data, opts = {}) {
+    const fmt = opts.fmt || (v => U.fmtNum(v));
+    const max = opts.max || niceMax(Math.max(opts.goal || 0, ...data.map(d => d.value)));
+    const ticks = [1, 0.5, 0].map(f => `<div class="tick" style="bottom:${f * 100}%"><span>${e(fmt(max * f))}</span></div>`).join('');
+    const goal = opts.goal ? `<div class="goal-line" style="bottom:${opts.goal / max * 100}%"><span>${e(opts.goalLabel || 'meta')}</span></div>` : '';
+    return `<div class="chart cols"><div class="plot">${ticks}${goal}<div class="bars">${data.map(d =>
+      `<div class="col" tabindex="0" data-tip="${e(d.tip || `${d.label}: ${fmt(d.value)}`)}"><div class="bar ${d.dim ? 'dim' : ''}" style="height:${U.clamp(d.value / max * 100, 0, 100)}%"></div></div>`).join('')}</div></div>
+      <div class="xlabels">${data.map(d => `<span>${e(d.label)}</span>`).join('')}</div></div>`;
+  }
+  /** Barras horizontais com marcador de referência. rows: [{label, value, tip, status}] */
+  function hbars(rows, opts = {}) {
+    const max = opts.max || niceMax(Math.max(...rows.map(r => r.value), opts.ref || 0));
+    return `<div class="chart hbars">${rows.map(r => `<div class="hrow" tabindex="0" data-tip="${e(r.tip || '')}"><span class="hl" title="${e(r.label)}">${e(r.label)}</span>
+      <div class="htrack">${opts.ref ? `<i class="ref" style="left:${opts.ref / max * 100}%"></i>` : ''}<div class="bar ${r.status || ''}" style="width:${U.clamp(r.value / max * 100, 0, 100)}%"></div></div><span class="hv">${e(r.text ?? U.fmtNum(r.value))}</span></div>`).join('')}
+      ${opts.ref ? `<p class="chart-note"><i class="ref-key"></i> ${e(opts.refLabel || '')}</p>` : ''}</div>`;
+  }
+  // dica flutuante
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true;
+  const showTip = el => { if (!tip.isConnected) document.body.appendChild(tip); tip.textContent = el.dataset.tip; tip.hidden = false; const r = el.getBoundingClientRect(); tip.style.left = U.clamp(r.left + r.width / 2 - tip.offsetWidth / 2, 6, innerWidth - tip.offsetWidth - 6) + 'px'; tip.style.top = Math.max(6, r.top - tip.offsetHeight - 6) + scrollY + 'px'; };
+  ['mouseover', 'focusin'].forEach(n => document.addEventListener(n, ev => { const el = ev.target.closest && ev.target.closest('[data-tip]'); if (el && el.dataset.tip) showTip(el); }));
+  ['mouseout', 'focusout'].forEach(n => document.addEventListener(n, ev => { if (ev.target.closest && ev.target.closest('[data-tip]')) tip.hidden = true; }));
+
+  return { modal, form, confirm, toast, closeAll, badge, progress, empty, sitBadge, prioBadge, discOptions, topicOptions, levelOptions, columns, hbars };
+})();
+</script>
+  <script>
+/* app.js — inicialização, navegação entre módulos, ações globais */
+const App = (() => {
+  const views = {};      // nome -> { title, render() }
+  const actions = {};    // data-act -> handler(dataset, elemento, evento)
+  const NAV = [
+    ['painel', 'Painel', '◧'], ['plano', 'Planejamento', '✦'], ['calendario', 'Calendário', '▦'], ['grade', 'Grade curricular', '☰'],
+    ['avaliacoes', 'Avaliações e notas', '✎'], ['kanban', 'Kanban', '▥'], ['pratica', 'Prática em software', '⬡'],
+    ['revisoes', 'Revisões', '↻'], ['cronometro', 'Cronômetro', '◷'], ['tcc', 'TCC', '❖'], ['config', 'Configurações', '⚙'],
+  ];
+  let current = 'painel';
+  const $ = s => document.querySelector(s);
+
+  function nav() {
+    const c = L.course();
+    $('#nav').innerHTML = NAV.filter(([k]) => k !== 'tcc' || (c && c.tccEnabled)).map(([k, label, ic]) =>
+      `<a href="#${k}" class="${k === current ? 'active' : ''}" ${k === current ? 'aria-current="page"' : ''}><span class="ic" aria-hidden="true">${ic}</span><span>${label}</span></a>`).join('');
+    const cs = Store.state.courses;
+    $('#course-switch').innerHTML = cs.length ? cs.map(x => `<option value="${x.id}" ${c && x.id === c.id ? 'selected' : ''}>${U.esc(x.name)}</option>`).join('') : '<option>Nenhum curso</option>';
+    $('#theme-btn').textContent = Store.state.settings.theme === 'dark' ? '☀ Tema claro' : '☾ Tema escuro';
+  }
+
+  function render() {
+    document.documentElement.dataset.theme = Store.state.settings.theme;
+    const name = views[current] ? current : 'painel';
+    const c = L.course();
+    if (name === 'tcc' && !(c && c.tccEnabled)) { location.hash = 'config'; return; }
+    nav();
+    $('#view-title').textContent = views[name].title;
+    const main = $('#view'), y = window.scrollY;
+    const openDetails = new Set([...main.querySelectorAll('details[open] > summary')].map(x => x.textContent.split('\n')[0].trim().slice(0, 40)));
+    main.innerHTML = (!c && !['grade', 'config'].includes(name))
+      ? UI.empty('Nenhum curso cadastrado.', '<button class="btn primary" data-act="course-new">Cadastrar curso</button>')
+      : views[name].render();
+    main.querySelectorAll('details > summary').forEach(x => { if (openDetails.has(x.textContent.split('\n')[0].trim().slice(0, 40))) x.parentElement.open = true; });
+    if (views[name].after) views[name].after(main);
+    window.scrollTo(0, y);
+    Timer.paint();
+  }
+  /** Salva o estado e redesenha a tela atual. */
+  function commit(msg) { Store.save(); render(); if (msg) UI.toast(msg); }
+
+  function go() {
+    const h = location.hash.slice(1).split('/')[0];
+    const changed = h !== current;
+    current = views[h] ? h : 'painel';
+    document.body.classList.remove('nav-open');
+    render(); if (changed) window.scrollTo(0, 0);
+  }
+
+  function init() {
+    Store.load();
+    Planner.trackToday();
+    window.addEventListener('hashchange', go);
+    document.addEventListener('click', ev => {
+      const el = ev.target.closest('[data-act]'); if (!el) return;
+      const fn = actions[el.dataset.act]; if (!fn) return;
+      if (el.tagName === 'A' || el.tagName === 'BUTTON') ev.preventDefault();
+      fn(el.dataset, el, ev);
+    });
+    document.addEventListener('change', ev => {
+      const el = ev.target.closest('[data-change]'); if (!el) return;
+      const fn = actions[el.dataset.change]; if (fn) fn(el.dataset, el, ev);
+    });
+    $('#course-switch').addEventListener('change', ev => { Store.state.settings.activeCourseId = ev.target.value; commit(); });
+    $('#theme-btn').addEventListener('click', () => { const s = Store.state.settings; s.theme = s.theme === 'dark' ? 'light' : 'dark'; commit(); });
+    $('#menu-btn').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+    $('#scrim').addEventListener('click', () => document.body.classList.remove('nav-open'));
+    setInterval(Timer.paint, 1000);
+    // vira o dia com o app aberto
+    let day = U.today(); setInterval(() => { if (U.today() !== day) { day = U.today(); Planner.trackToday(); render(); } }, 60000);
+    go();
+    Armazenamento.aoMudar(k => { if (k === Armazenamento.CHAVES.pos && !document.querySelector('.modal')) { Store.load(); Store.rev++; render(); } });
+    if (Store.state.firstRun) welcome(); else fromHub();
+  }
+
+  /** Atende ao que foi clicado na agenda do hub (index.html). */
+  function fromHub() {
+    const q = new URLSearchParams(location.search), done = q.get('concluir'), start = q.get('iniciar'), key = done || start;
+    if (!key) return;
+    let it = null; const days = Planner.build().days;
+    Object.keys(days).sort().some(d => (it = days[d].find(i => i.key === key)));
+    history.replaceState(null, '', location.pathname + (done ? '#plano' : '#cronometro'));
+    current = done ? 'plano' : 'cronometro';
+    if (!it) { render(); return UI.toast('Esse item não está mais no plano.'); }
+    if (start) {
+      if (!Store.state.timer) Store.state.timer = { startedAt: Date.now(), acc: 0, date: U.today(), type: { L: 'aula', P: 'pratica', R: 'revisao', A: 'avaliacao' }[it.kind] || 'aula', disciplineId: it.disciplineId || '', topicId: it.topicId || '' };
+      return commit(Store.state.timer.topicId === (it.topicId || '') ? 'Cronômetro iniciado.' : 'Já havia um cronômetro em andamento.');
+    }
+    render(); App.completeItem(key, it.count);
+  }
+
+  function welcome() {
+    const m = UI.modal({ title: 'Bem-vindo ao seu gestor de estudos', body: `
+      <p>Sua pós em <strong>BIM – Projetos de Infraestrutura</strong> (PUC Minas) já está cadastrada com as 15 disciplinas e os assuntos da ementa.</p>
+      <p>Alguns dados não constam na ementa e foram <strong>estimados</strong> — ajuste quando tiver as informações do AVA:</p>
+      <ul><li><strong>Período de cada disciplina:</strong> distribuído igualmente até a sua meta (outubro/2027).</li>
+      <li><strong>Quantidade e duração das videoaulas:</strong> 24 h divididas entre os assuntos.</li>
+      <li><strong>Provas e atividades:</strong> nenhuma cadastrada — inclua em “Avaliações e notas”.</li></ul>
+      <p>Como você quer começar?</p>`,
+      footer: `<button class="btn ghost" data-w="keep">Manter datas desde 10/07/2026</button><span class="spacer"></span><button class="btn primary" data-w="today">Planejar a partir de hoje</button>`,
+      onClose: () => { if (Store.state.firstRun) { Store.state.firstRun = false; commit(); } } });
+    m.footer.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-w]'); if (!b) return;
+      if (b.dataset.w === 'today') { const c = L.course(); Seed.spread(L.disciplines(c.id), U.today() > c.start ? U.today() : c.start, c.goalDate || c.end); }
+      Store.state.firstRun = false; m.close(); commit();
+      UI.toast('Tudo pronto. Em “Grade curricular” você marca o que já assistiu.');
+    });
+  }
+
+  return { views, actions, init, render, commit, go: n => { location.hash = n; } };
+})();
+</script>
+  <script>
+/* painel.js — painel principal */
+(() => {
+  const e = U.esc;
+  App.views.painel = { title: 'Painel', render };
+
+  function render() {
+    const c = L.course(), st = L.courseStats(c), today = U.today(), plan = Planner.build();
+    const ws = U.weekStart(today), minToday = L.minutesOn(today, c.id), minWeek = L.minutesBetween(ws, U.addDays(ws, 6), c.id);
+    const gDay = L.dailyGoal(today), gWeek = L.weeklyGoal();
+
+    /* previsão × meta × prazo oficial */
+    let fc;
+    if (st.pctHours >= 1 && plan.complete && plan.totalRemMin === 0) fc = { big: 'Concluído', badge: UI.badge('✓ todas as aulas assistidas', 'ok') };
+    else if (!plan.forecast) fc = { big: 'Indefinida', badge: UI.badge('⚠ tempo disponível insuficiente', 'bad') };
+    else {
+      const dGoal = c.goalDate ? U.diff(c.goalDate, plan.forecast) : null, dEnd = c.end ? U.diff(c.end, plan.forecast) : null;
+      fc = { big: U.fmtDate(plan.forecast), badge: dEnd !== null && dEnd > 0 ? UI.badge(`⚠ ${dEnd} dias após o prazo oficial`, 'bad') : dGoal === null ? '' : dGoal <= 0 ? UI.badge('✓ dentro da meta pessoal', 'ok') : UI.badge(`▲ ${dGoal} dias após a meta`, 'warn') };
+    }
+
+    const tiles = `
+      <div class="stat"><span class="k">Conclusão do curso</span><strong>${Math.round(st.pctHours * 100)}%</strong>${UI.progress(st.pctHours)}<small>${U.fmtNum(st.doneH)} de ${U.fmtNum(st.totalH)} h de aula</small></div>
+      <div class="stat"><span class="k">Disciplinas aprovadas</span><strong>${st.approved}<em>/${st.count}</em></strong>${UI.progress(st.count ? st.approved / st.count : 0, 'ok')}<small>${st.risk ? `⚠ ${st.risk} em risco` : 'nenhuma em risco'}</small></div>
+      <div class="stat"><span class="k">Estudo hoje</span><strong>${U.fmtMin(minToday)}</strong>${UI.progress(gDay ? minToday / gDay : 0)}<small>meta do dia: ${gDay ? U.fmtMin(gDay) : 'folga'}</small></div>
+      <div class="stat"><span class="k">Estudo na semana</span><strong>${U.fmtMin(minWeek)}</strong>${UI.progress(gWeek ? minWeek / gWeek : 0)}<small>meta semanal: ${U.fmtMin(gWeek)}</small></div>
+      <div class="stat"><span class="k">Previsão de conclusão</span><strong class="sm">${fc.big}</strong>${fc.badge}<small>meta ${U.fmtDate(c.goalDate)} · prazo oficial ${U.fmtDate(c.end)}</small></div>`;
+
+    /* plano de hoje (resumo) */
+    const items = (plan.days[today] || []).slice(0, 4);
+    const todayCard = `<section class="card"><header><h3>O que fazer hoje</h3><a class="btn sm ghost" href="#plano">Ver planejamento</a></header>
+      ${items.length ? `<ul class="list">${items.map(i => `<li><span class="score" data-tip="Prioridade ${i.score}/100">${i.score}</span><div class="grow"><strong>${e(planTitle(i))}</strong><small>${e(i.sub)} · ${e(i.why)}</small></div><span class="muted nowrap">${U.fmtMin(i.minutes)}</span></li>`).join('')}</ul>`
+        : UI.empty(minToday ? 'Plano do dia cumprido. Bom trabalho!' : 'Nada planejado para hoje.')}</section>`;
+
+    /* próximas avaliações */
+    const as = L.courseAssessments(c.id).filter(a => (a.score === null || a.score === '' || a.score === undefined) && !a.delivered && a.due).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 5);
+    const assessCard = `<section class="card"><header><h3>Próximas avaliações</h3><a class="btn sm ghost" href="#avaliacoes">Ver todas</a></header>
+      ${as.length ? `<ul class="list">${as.map(a => { const dd = U.diff(today, a.due); return `<li><div class="grow"><strong>${e(L.ASSESS_TYPES[a.type] || '')}: ${e(a.title)}</strong><small>${e(L.discipline(a.disciplineId).name)} · ${U.fmtNum(a.points)} pts · ${U.fmtDate(a.due)}</small></div>${UI.badge(dd < 0 ? `⚠ venceu ${U.relDays(dd)}` : U.relDays(dd), dd < 0 ? 'bad' : dd <= 3 ? 'bad' : dd <= 10 ? 'warn' : 'info')}</li>`; }).join('')}</ul>`
+        : UI.empty('Nenhuma avaliação pendente cadastrada.', '<a class="btn sm" href="#avaliacoes">Cadastrar avaliações</a>')}</section>`;
+
+    /* revisões e pendências */
+    const revs = L.courseTopics(c.id).filter(t => t.nextReviewAt && t.status !== 'dominado').sort((a, b) => a.nextReviewAt.localeCompare(b.nextReviewAt));
+    const due = revs.filter(t => t.nextReviewAt <= today).length;
+    const pendTopics = U.sum(st.ds, d => L.discStats(d).pendingTopics);
+    const revCard = `<section class="card"><header><h3>Revisões e pendências</h3><a class="btn sm ghost" href="#revisoes">Ver revisões</a></header>
+      <div class="mini-stats"><div><strong>${due}</strong><span>revisões para hoje</span></div><div><strong>${revs.length - due}</strong><span>revisões agendadas</span></div><div><strong>${pendTopics}</strong><span>assuntos com aulas pendentes</span></div></div>
+      ${revs.length ? `<ul class="list compact">${revs.slice(0, 4).map(t => `<li><div class="grow"><strong>${e(t.name)}</strong><small>${e(L.discipline(t.disciplineId).name)}</small></div>${UI.badge(U.relDays(U.diff(today, t.nextReviewAt)), t.nextReviewAt <= today ? 'warn' : 'mute')}</li>`).join('')}</ul>` : ''}</section>`;
+
+    /* disciplinas */
+    const rows = st.ds.map(d => { const s = L.discStats(d), g = L.grade(d), sit = L.situation(d);
+      return `<tr><td><strong>${d.order}. ${e(d.name)}</strong>${sit.risks.length ? `<small class="risk">${e(sit.risks.join(' · '))}</small>` : ''}</td>
+        <td class="w-prog">${UI.progress(s.pct)}<small>${Math.round(s.pct * 100)}% · ${s.watched}/${s.lessons} aulas</small></td>
+        <td class="num">${g.count ? `${U.fmtNum(g.obtained)}<small>/${g.pass}</small>` : '—'}</td><td>${UI.sitBadge(sit)}</td></tr>`; }).join('');
+    const discCard = `<section class="card span2"><header><h3>Disciplinas</h3><a class="btn sm ghost" href="#grade">Abrir grade</a></header>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Disciplina</th><th>Progresso</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+
+    /* gráficos */
+    const days = [...Array(7)].map((_, i) => U.addDays(ws, i));
+    const dayChart = UI.columns(days.map(d => ({ label: U.DOW[U.dow(d)], value: L.minutesOn(d, c.id) / 60, tip: `${U.fmtLong(d)}: ${U.fmtMin(L.minutesOn(d, c.id))}`, dim: d > today })), { fmt: v => U.fmtNum(v) + 'h' });
+    const weeks = [...Array(8)].map((_, i) => U.addDays(ws, -7 * (7 - i)));
+    const weekChart = UI.columns(weeks.map(w => { const m = L.minutesBetween(w, U.addDays(w, 6), c.id); return { label: U.fmtShort(w), value: m / 60, tip: `Semana de ${U.fmtShort(w)}: ${U.fmtMin(m)}` }; }), { fmt: v => U.fmtNum(v) + 'h', goal: gWeek / 60, goalLabel: 'meta' });
+    const graded = st.ds.filter(d => L.grade(d).count);
+    const gradeChart = graded.length ? UI.hbars(graded.map(d => { const g = L.grade(d); return { label: `${d.order}. ${d.name}`, value: g.obtained, text: `${U.fmtNum(g.obtained)} pts`, status: g.obtained >= g.pass ? 'ok' : '', tip: `${d.name}: ${U.fmtNum(g.obtained)} de ${U.fmtNum(g.total)} pts cadastrados` }; }), { max: 100, ref: c.passScore, refLabel: `mínimo para aprovação: ${c.passScore} pts` }) : UI.empty('As notas aparecem aqui quando houver avaliações cadastradas.');
+    const charts = `<section class="card"><header><h3>Horas por dia <small>nesta semana</small></h3></header>${dayChart}</section>
+      <section class="card"><header><h3>Horas por semana <small>últimas 8 semanas</small></h3></header>${weekChart}</section>
+      <section class="card span2"><header><h3>Notas por disciplina</h3></header>${gradeChart}</section>`;
+
+    const pace = plan.pace && plan.totalRemMin > 0 ? `<p class="pace ${plan.pace.ratio > 1 ? 'bad' : ''}">${plan.pace.ratio > 1 ? '⚠ ' : ''}Para concluir até ${U.fmtDate(c.goalDate || c.end)} você precisa de <strong>${U.fmtMin(plan.pace.needPerWeek)} por semana</strong>; sua disponibilidade é de ${U.fmtMin(plan.pace.capPerWeek)} por semana.</p>` : '';
+
+    return `<div class="course-head"><h2>${e(c.name)}</h2><p class="muted">${e(c.institution || '')} · ${U.fmtDate(c.start)} a ${U.fmtDate(c.end)}</p>${pace}</div>
+      <div class="stats">${tiles}</div><div class="grid2">${todayCard}${assessCard}${revCard}
+      <section class="card"><header><h3>Atalhos</h3></header><div class="shortcuts"><a class="btn" href="#cronometro">◷ Iniciar cronômetro</a><a class="btn" href="#kanban">▥ Abrir Kanban</a><a class="btn" href="#calendario">▦ Ver calendário</a><a class="btn" href="#pratica">⬡ Registrar prática</a></div></section>
+      ${discCard}${charts}</div>`;
+  }
+
+  function planTitle(i) { if (i.kind !== 'L') return i.title; const n = Math.round(i.count * 10) / 10; return `${n < 1 ? 'Assistir parte da aula' : n === 1 ? 'Assistir 1 aula' : `Assistir ${U.fmtNum(n)} aulas`}: ${i.title}`; }
+  App.planTitle = planTitle;
+})();
+</script>
+  <script>
+/* plano.js — planejamento diário: itens priorizados, conclusão, ajustes manuais */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  App.views.plano = { title: 'Planejamento inteligente', render };
+
+  function itemRow(i, date, isToday) {
+    return `<li class="plan-item k-${i.kind}"><button class="score" data-act="plan-why" data-key="${i.key}" data-date="${date}" data-tip="Ver como a prioridade ${i.score} foi calculada">${i.score}</button>
+      <div class="grow"><strong>${e(App.planTitle(i))}</strong><small>${UI.badge(Planner.KIND[i.kind], 'kind')} ${e(i.sub)} · ${U.fmtMin(i.minutes)}</small><small class="why">${e(i.why)}</small></div>
+      <div class="acts">${isToday ? `<button class="btn sm primary" data-act="plan-done" data-key="${i.key}">Concluir</button><button class="btn sm ghost" data-act="plan-snooze" data-key="${i.key}" title="Não fazer hoje; volta ao plano amanhã">Adiar</button>` : ''}
+      <button class="btn sm ghost" data-act="plan-pin" data-key="${i.key}" data-date="${date}" title="Fixar em uma data">Fixar…</button>${i.kind === 'M' ? `<button class="btn sm ghost danger" data-act="manual-del" data-id="${i.refId}">Excluir</button>` : ''}</div></li>`;
+  }
+
+  function render() {
+    const c = L.course(), plan = Planner.build(), today = U.today(), p = S().plan;
+    const items = plan.days[today] || [], log = p.log[today] || [];
+    const cap = p.cap[today] !== undefined ? p.cap[today] : S().settings.availability[U.dow(today)];
+    const done = L.minutesOn(today, c.id), planned = U.sum(items, i => i.minutes);
+    const missed = p.missed ? `<div class="notice warn"><div><strong>${p.missed.count} ${p.missed.count === 1 ? 'item planejado' : 'itens planejados'} para ${U.fmtDate(p.missed.from)} não ${p.missed.count === 1 ? 'foi concluído' : 'foram concluídos'}.</strong><br>O cronograma já foi reorganizado automaticamente: ${e(p.missed.items.map(x => x.title).slice(0, 3).join('; '))}${p.missed.count > 3 ? '…' : ''}</div><button class="btn sm ghost" data-act="plan-dismiss">Entendi</button></div>` : '';
+    const pins = Object.keys(p.pins).length + Object.keys(p.snooze).length;
+
+    const next = [...Array(7)].map((_, k) => U.addDays(today, k + 1)).map(d => { const its = plan.days[d] || [];
+      return `<details class="day"><summary><span>${U.fmtLong(d)}</span><span class="muted">${its.length ? `${its.length} ${its.length === 1 ? 'item' : 'itens'} · ${U.fmtMin(U.sum(its, i => i.minutes))}` : 'livre'}</span></summary>${its.length ? `<ul class="list">${its.map(i => itemRow(i, d, false)).join('')}</ul>` : '<p class="muted pad">Sem tempo disponível ou sem tarefas elegíveis neste dia.</p>'}</details>`; }).join('');
+
+    return `${missed}
+    <div class="toolbar"><div><h2>${U.fmtLong(today)}</h2><p class="muted">Tempo disponível hoje: <strong>${U.fmtMin(cap)}</strong> · estudado: ${U.fmtMin(done)} · planejado: ${U.fmtMin(planned)}</p></div>
+      <div class="btns"><button class="btn" data-act="plan-cap">Ajustar tempo de hoje</button><button class="btn" data-act="manual-new">+ Tarefa manual</button>${pins ? `<button class="btn ghost" data-act="plan-clear">Limpar ajustes (${pins})</button>` : ''}</div></div>
+    <section class="card"><header><h3>Plano de hoje</h3><label class="check"><input type="checkbox" data-change="plan-advance" ${S().settings.allowAdvance ? 'checked' : ''}> <span>Adiantar disciplinas ainda não abertas</span></label></header>
+      ${items.length ? `<ul class="list">${items.map(i => itemRow(i, today, true)).join('')}</ul>` : UI.empty(cap <= done && done ? 'Você já cumpriu o tempo disponível de hoje. 🎯' : cap === 0 ? 'Hoje está marcado como dia sem estudo.' : 'Nenhuma tarefa elegível hoje. Cadastre avaliações ou ajuste os períodos das disciplinas na grade.')}
+      ${log.length ? `<h4 class="sub">Concluído hoje</h4><ul class="list compact done">${log.map(x => `<li><span class="tick">✓</span><div class="grow"><strong>${e(x.title)}</strong><small>${e(x.sub || '')}</small></div><span class="muted">${x.min ? U.fmtMin(x.min) : ''}</span></li>`).join('')}</ul>` : ''}</section>
+    <section class="card"><header><h3>Próximos 7 dias</h3><a class="btn sm ghost" href="#calendario">Calendário completo</a></header>${next}</section>
+    <details class="card explain"><summary><h3>Como a prioridade é calculada</h3></summary>
+      <p>Cada tarefa recebe uma pontuação de 0 a 100. O plano de cada dia é preenchido com as tarefas de maior pontuação até completar o seu tempo disponível. Tudo o que não for feito volta para a fila e é redistribuído.</p>
+      <ul><li><strong>Avaliações:</strong> quanto mais perto do prazo e maior o valor em pontos, maior a prioridade. Nos dois últimos dias entram no plano obrigatoriamente.</li>
+      <li><strong>Prazo da disciplina no AVA:</strong> compara a carga pendente (aulas + prática) com o tempo que resta até o fechamento.</li>
+      <li><strong>Notas:</strong> quanto mais longe dos ${c.passScore} pontos, mais prioridade para a disciplina.</li>
+      <li><strong>Dificuldade, prioridade e autoavaliação:</strong> assuntos difíceis, marcados como prioritários ou autoavaliados como “difícil” sobem.</li>
+      <li><strong>Revisões:</strong> ganham pontos a cada dia de atraso (limitadas a 25% do tempo do dia).</li>
+      <li><strong>Ritmo:</strong> se o ritmo necessário para a meta superar sua disponibilidade, as aulas pendentes ganham prioridade.</li>
+      <li><strong>Teoria × prática:</strong> ao terminar as aulas de um assunto, entra uma sessão prática equivalente a ${S().settings.practiceRatio}% do tempo de aula.</li></ul></details>`;
+  }
+
+  /* ---------- registro de conclusão ---------- */
+  function logDone(key, title, sub, min) { const p = S().plan, t = U.today(); (p.log[t] = p.log[t] || []).push({ key, title, sub, min }); delete p.pins[key]; delete p.snooze[key]; }
+  const ratingField = (label = 'Como foi? (autoavaliação)') => ({ name: 'rating', label, type: 'select', value: 2, options: UI.levelOptions(L.RATING), half: true });
+
+  /** Abre o diálogo adequado para concluir um item do plano. */
+  App.completeItem = function (key, count) {
+    const kind = key[0], id = key.slice(2);
+    if (kind === 'L') {
+      const t = L.topic(id), d = L.discipline(t.disciplineId), rem = t.lessons - t.watched, n = U.clamp(Math.round(count || 1), 1, rem);
+      UI.form({ title: 'Registrar aulas assistidas', intro: `<strong>${e(t.name)}</strong><br>${e(d.name)} · ${t.watched}/${t.lessons} aulas assistidas`, submit: 'Registrar', fields: [
+        { name: 'n', label: 'Aulas assistidas agora', type: 'number', value: n, min: 1, max: rem, step: 1, required: true, half: true },
+        { name: 'min', label: 'Tempo de estudo (min)', type: 'number', value: n * d.lessonMin, min: 0, required: true, half: true, hint: 'Deixe 0 se já registrou pelo cronômetro.' },
+        ratingField() ],
+        onSubmit: v => { const k = Math.round(v.n); L.watch(t, k, Number(v.rating)); L.logSession({ minutes: v.min, type: 'aula', disciplineId: d.id, topicId: t.id });
+          logDone(key, `${k} ${k === 1 ? 'aula' : 'aulas'}: ${t.name}`, d.name, v.min); App.commit(t.watched >= t.lessons ? 'Assunto concluído — primeira revisão agendada.' : 'Aulas registradas.'); } });
+    } else if (kind === 'P') App.practiceForm(null, id, key);
+    else if (kind === 'R') App.reviewForm(id, key);
+    else if (kind === 'A') App.assessDeliver(id, key);
+    else if (kind === 'M') { const m = S().manual.find(x => x.id === id); m.done = true; L.logSession({ minutes: m.minutes || 0, type: m.type || 'aula', note: m.title, disciplineId: '' }); logDone(key, m.title, 'Tarefa manual', m.minutes); App.commit('Tarefa concluída.'); }
+    else if (kind === 'T') { const x = S().tcc.find(y => y.id === id); x.status = 'done'; logDone(key, 'TCC: ' + x.title, '', 0); App.commit('Etapa do TCC concluída.'); }
+  };
+  App.logDone = logDone;
+
+  Object.assign(App.actions, {
+    'plan-done': d => { const it = (Planner.build().days[U.today()] || []).find(i => i.key === d.key); App.completeItem(d.key, it ? it.count : 1); },
+    'plan-snooze': d => { S().plan.snooze[d.key] = U.addDays(U.today(), 1); delete S().plan.pins[d.key]; App.commit('Adiado para amanhã; o plano foi reorganizado.'); },
+    'plan-pin': d => UI.form({ title: 'Fixar tarefa em uma data', intro: 'A tarefa entra obrigatoriamente no plano do dia escolhido.', submit: 'Fixar', fields: [{ name: 'date', label: 'Data', type: 'date', value: S().plan.pins[d.key] || d.date, required: true }],
+      onSubmit: v => { if (v.date < U.today()) return 'Escolha hoje ou uma data futura.'; S().plan.pins[d.key] = v.date; delete S().plan.snooze[d.key]; App.commit('Tarefa fixada em ' + U.fmtDate(v.date) + '.'); },
+      onDelete: S().plan.pins[d.key] ? () => { delete S().plan.pins[d.key]; App.commit('Fixação removida.'); } : null, deleteLabel: 'Remover fixação' }),
+    'plan-clear': () => { S().plan.pins = {}; S().plan.snooze = {}; App.commit('Ajustes manuais removidos.'); },
+    'plan-dismiss': () => { S().plan.missed = null; App.commit(); },
+    'plan-advance': (d, el) => { S().settings.allowAdvance = el.checked; App.commit(); },
+    'plan-cap': () => { const t = U.today(), cur = S().plan.cap[t] !== undefined ? S().plan.cap[t] : S().settings.availability[U.dow(t)];
+      UI.form({ title: 'Tempo disponível hoje', intro: 'Vale apenas para hoje. O padrão por dia da semana fica em Configurações.', fields: [{ name: 'min', label: 'Minutos disponíveis hoje (total)', type: 'number', value: cur, min: 0, max: 1440, required: true }],
+        onSubmit: v => { S().plan.cap[t] = Math.round(v.min); App.commit('Plano de hoje recalculado.'); } }); },
+    'plan-why': d => { const it = (Planner.build().days[d.date] || []).find(i => i.key === d.key); if (!it) return;
+      UI.modal({ title: `Prioridade ${it.score}/100`, body: `<p><strong>${e(App.planTitle(it))}</strong><br><span class="muted">${e(it.sub)}</span></p><p>Fatores considerados, do mais para o menos importante:</p><ol class="why-list">${it.reasons.map(r => `<li>${e(r.t)}</li>`).join('')}</ol>`, footer: '<span class="spacer"></span><button class="btn primary" data-close>Fechar</button>' }); },
+    'manual-del': d => UI.confirm('Excluir esta tarefa manual?', () => { S().manual = S().manual.filter(m => m.id !== d.id); delete S().plan.pins['M:' + d.id]; App.commit('Tarefa excluída.'); }),
+    'manual-new': () => UI.form({ title: 'Nova tarefa manual', fields: [
+        { name: 'title', label: 'Descrição', required: true }, { name: 'date', label: 'Data', type: 'date', value: U.today(), required: true, half: true },
+        { name: 'minutes', label: 'Duração (min)', type: 'number', value: 30, min: 0, required: true, half: true },
+        { name: 'type', label: 'Tipo', type: 'select', value: 'aula', options: UI.levelOptions(L.SESSION_TYPES) }],
+      onSubmit: v => { S().manual.push({ id: U.uid(), courseId: L.course().id, title: v.title, date: v.date, minutes: Math.round(v.minutes), type: v.type, done: false }); App.commit('Tarefa adicionada ao plano.'); } }),
+  });
+})();
+</script>
+  <script>
+/* calendario.js — calendário de estudos (mês e semana) com avaliações destacadas */
+(() => {
+  const e = U.esc;
+  let mode = 'mes', anchor = null;
+  App.views.calendario = { title: 'Calendário de estudos', render };
+
+  function dayData(d, plan, c) {
+    const today = U.today();
+    const as = L.courseAssessments(c.id).filter(a => a.due === d);
+    const tcc = c.tccEnabled ? Store.state.tcc.filter(x => x.courseId === c.id && x.due === d) : [];
+    const opens = L.disciplines(c.id).filter(x => x.start === d), closes = L.disciplines(c.id).filter(x => x.end === d);
+    return { as, tcc, opens, closes, items: d >= today ? (plan.days[d] || []) : [], studied: L.minutesOn(d, c.id) };
+  }
+  function chips(dd, full) {
+    const out = [];
+    dd.as.forEach(a => out.push(`<span class="ev assess" title="${e(a.title)}">✎ ${e(L.ASSESS_TYPES[a.type] || '')}${full ? ': ' + e(a.title) : ''}</span>`));
+    dd.tcc.forEach(x => out.push(`<span class="ev assess">❖ TCC: ${e(x.title)}</span>`));
+    dd.closes.forEach(x => out.push(`<span class="ev close" title="${e(x.name)}">⚑ Fecha: ${e(full ? x.name : 'disc. ' + x.order)}</span>`));
+    dd.opens.forEach(x => out.push(`<span class="ev open" title="${e(x.name)}">▸ Abre: ${e(full ? x.name : 'disc. ' + x.order)}</span>`));
+    if (dd.studied) out.push(`<span class="ev done">✓ ${U.fmtMin(dd.studied)} estudados</span>`);
+    if (full) dd.items.forEach(i => out.push(`<span class="ev plan k-${i.kind}">${e(Planner.KIND[i.kind])} · ${U.fmtMin(i.minutes)} — ${e(i.title)}</span>`));
+    else if (dd.items.length) { const byK = {}; dd.items.forEach(i => byK[i.kind] = (byK[i.kind] || 0) + i.minutes); Object.entries(byK).forEach(([k, m]) => out.push(`<span class="ev plan k-${k}">${Planner.KIND[k]} ${U.fmtMin(m)}</span>`)); }
+    return out.join('');
+  }
+
+  function render() {
+    const c = L.course(), plan = Planner.build(), today = U.today();
+    if (!anchor) anchor = today;
+    let title, grid;
+    if (mode === 'mes') {
+      const first = anchor.slice(0, 8) + '01', start = U.weekStart(first), month = anchor.slice(0, 7);
+      title = U.fmtMonth(first);
+      const cells = [];
+      for (let i = 0, d = start; i < 42; i++, d = U.addDays(d, 1)) {
+        if (i >= 35 && d.slice(0, 7) !== month) break;
+        const dd = dayData(d, plan, c);
+        cells.push(`<button class="cell ${d.slice(0, 7) !== month ? 'out' : ''} ${d === today ? 'today' : ''} ${dd.as.length ? 'has-assess' : ''}" data-act="cal-day" data-date="${d}" aria-label="${U.fmtLong(d)}"><span class="dn">${Number(d.slice(8))}</span><div class="evs">${chips(dd, false)}</div></button>`);
+      }
+      grid = `<div class="cal month"><div class="cal-head">${[1, 2, 3, 4, 5, 6, 0].map(i => `<span>${U.DOW[i]}</span>`).join('')}</div><div class="cal-grid">${cells.join('')}</div></div>`;
+    } else {
+      const start = U.weekStart(anchor);
+      title = `${U.fmtShort(start)} a ${U.fmtDate(U.addDays(start, 6))}`;
+      grid = `<div class="cal week">${[...Array(7)].map((_, i) => { const d = U.addDays(start, i), dd = dayData(d, plan, c);
+        return `<button class="wday ${d === today ? 'today' : ''} ${dd.as.length ? 'has-assess' : ''}" data-act="cal-day" data-date="${d}"><span class="wd">${U.DOW[U.dow(d)]} <strong>${U.fmtShort(d)}</strong></span><div class="evs">${chips(dd, true) || '<span class="muted">—</span>'}</div></button>`; }).join('')}</div>`;
+    }
+    return `<div class="toolbar"><div class="btns"><button class="btn" data-act="cal-nav" data-dir="-1" aria-label="Anterior">‹</button><button class="btn" data-act="cal-nav" data-dir="0">Hoje</button><button class="btn" data-act="cal-nav" data-dir="1" aria-label="Próximo">›</button><h2 class="cal-title">${title}</h2></div>
+      <div class="seg"><button class="${mode === 'semana' ? 'on' : ''}" data-act="cal-mode" data-mode="semana">Semana</button><button class="${mode === 'mes' ? 'on' : ''}" data-act="cal-mode" data-mode="mes">Mês</button></div></div>
+      ${grid}<p class="legend"><span class="ev assess">✎ Avaliação</span><span class="ev close">⚑ Fechamento no AVA</span><span class="ev plan k-L">Aula</span><span class="ev plan k-P">Prática</span><span class="ev plan k-R">Revisão</span><span class="ev done">✓ Estudado</span> · Clique em um dia para ver os detalhes.</p>`;
+  }
+
+  Object.assign(App.actions, {
+    'cal-mode': d => { mode = d.mode; App.render(); },
+    'cal-nav': d => { const dir = Number(d.dir);
+      if (!dir) anchor = U.today();
+      else if (mode === 'semana') anchor = U.addDays(anchor, 7 * dir);
+      else { const dt = U.parse(anchor.slice(0, 8) + '01'); dt.setMonth(dt.getMonth() + dir); anchor = U.iso(dt); }
+      App.render(); },
+    'cal-day': d => { const c = L.course(), dd = dayData(d.date, Planner.build(), c), ss = Store.state.sessions.filter(s => s.date === d.date && s.courseId === c.id);
+      const sec = (t, html) => html ? `<h4 class="sub">${t}</h4>${html}` : '';
+      UI.modal({ title: U.fmtLong(d.date) + ' · ' + U.fmtDate(d.date), body:
+        sec('Avaliações e prazos', (dd.as.length || dd.closes.length || dd.opens.length || dd.tcc.length) ? `<ul class="list compact">${dd.as.map(a => `<li><div class="grow"><strong>${e(L.ASSESS_TYPES[a.type] || '')}: ${e(a.title)}</strong><small>${e(L.discipline(a.disciplineId).name)} · ${U.fmtNum(a.points)} pts</small></div></li>`).join('')}${dd.tcc.map(x => `<li><div class="grow"><strong>TCC: ${e(x.title)}</strong></div></li>`).join('')}${dd.closes.map(x => `<li><div class="grow"><strong>Fecha no AVA:</strong> ${e(x.name)}</div></li>`).join('')}${dd.opens.map(x => `<li><div class="grow"><strong>Abre:</strong> ${e(x.name)}</div></li>`).join('')}</ul>` : '') +
+        sec('Planejado', dd.items.length ? `<ul class="list compact">${dd.items.map(i => `<li><span class="score">${i.score}</span><div class="grow"><strong>${e(App.planTitle(i))}</strong><small>${e(i.sub)} · ${U.fmtMin(i.minutes)} · ${e(i.why)}</small></div></li>`).join('')}</ul>` : '') +
+        sec('Estudo registrado', ss.length ? `<ul class="list compact">${ss.map(s => `<li><div class="grow"><strong>${L.SESSION_TYPES[s.type] || s.type} · ${U.fmtMin(s.minutes)}</strong><small>${e((L.discipline(s.disciplineId) || {}).name || s.note || 'Geral')}</small></div></li>`).join('')}</ul>` : '') || UI.empty('Nada registrado ou planejado neste dia.'),
+        footer: `${d.date >= U.today() ? `<button class="btn" data-act="assess-new" data-date="${d.date}">+ Avaliação neste dia</button>` : ''}<span class="spacer"></span><button class="btn primary" data-close>Fechar</button>` }); },
+  });
+})();
+</script>
+  <script>
+/* grade.js — gestão da grade curricular: cursos, disciplinas, assuntos, subtópicos, videoaulas */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  const open = new Set();
+  let filter = 'todos';
+  App.views.grade = { title: 'Grade curricular', render };
+
+  function topicRow(t, d) {
+    const w = L.watchedOf(t), sub = t.subtopics.length ? ` · ${t.subtopics.filter(x => x.done).length}/${t.subtopics.length} subtópicos` : '';
+    return `<li class="topic ${w >= t.lessons ? 'complete' : ''}"><div class="grow"><button class="link" data-act="topic-detail" data-id="${t.id}">${e(t.name)}</button>
+        <small>${UI.badge(L.STATUS_LABEL[t.status], 'st-' + t.status)} ${UI.prioBadge(t.priority)} ${t.difficulty === 3 ? UI.badge('Difícil', 'warn') : ''}${t.notes ? ' · ✎ anotações' : ''}${t.links.length ? ` · 🔗 ${t.links.length}` : ''}${sub}</small></div>
+      <div class="stepper" aria-label="Aulas assistidas"><button class="icon-btn" data-act="topic-step" data-id="${t.id}" data-n="-1" aria-label="Menos uma aula" ${t.watched <= 0 || t.status === 'dominado' ? 'disabled' : ''}>−</button><span>${w}/${t.lessons} aulas</span><button class="icon-btn" data-act="topic-step" data-id="${t.id}" data-n="1" aria-label="Mais uma aula" ${w >= t.lessons ? 'disabled' : ''}>+</button></div>
+      <button class="btn sm ghost" data-act="topic-edit" data-id="${t.id}">Editar</button></li>`;
+  }
+
+  function discCard(d) {
+    const s = L.discStats(d), sit = L.situation(d), isOpen = open.has(d.id), ts = L.topics(d.id);
+    return `<section class="card disc ${isOpen ? 'open' : ''}"><button class="disc-head" data-act="disc-toggle" data-id="${d.id}" aria-expanded="${isOpen}">
+        <span class="caret">${isOpen ? '▾' : '▸'}</span><div class="grow"><strong>${d.order}. ${e(d.name)}</strong>
+        <small>${d.hours} h · ${d.start ? `${U.fmtDate(d.start)} a ${U.fmtDate(d.end)}${d.estimated ? ' (estimado)' : ''}` : 'sem período definido'} · ${s.pendingTopics} ${s.pendingTopics === 1 ? 'assunto pendente' : 'assuntos pendentes'}</small>
+        <div class="disc-prog">${UI.progress(s.pct)}<span>${Math.round(s.pct * 100)}%</span></div></div>
+        <span class="badges">${UI.sitBadge(sit)} ${UI.prioBadge(d.priority)} ${d.difficulty === 3 ? UI.badge('Difícil', 'warn') : ''}</span></button>
+      ${isOpen ? `<div class="disc-body">${sit.risks.length ? `<p class="risk">⚠ ${e(sit.risks.join(' · '))}</p>` : ''}
+        <div class="btns"><button class="btn sm" data-act="disc-edit" data-id="${d.id}">Editar disciplina</button><button class="btn sm" data-act="topic-new" data-id="${d.id}">+ Assunto</button><button class="btn sm" data-act="assess-new" data-disc="${d.id}">+ Avaliação</button>
+          ${s.pct < 1 ? `<button class="btn sm ghost" data-act="disc-complete" data-id="${d.id}">Marcar todas as aulas como assistidas</button>` : ''}</div>
+        <p class="muted">${s.watched}/${s.lessons} aulas de ~${d.lessonMin} min${d.notes ? ' · ' + e(d.notes) : ''}</p>
+        ${ts.length ? `<ul class="list topics">${ts.map(t => topicRow(t, d)).join('')}</ul>` : UI.empty('Nenhum assunto cadastrado.')}</div>` : ''}</section>`;
+  }
+
+  function render() {
+    const c = L.course();
+    const head = `<div class="toolbar"><div>${c ? `<h2>${e(c.name)}</h2><p class="muted">${e(c.institution || '')} · ${U.fmtDate(c.start)} a ${U.fmtDate(c.end)} · meta ${U.fmtDate(c.goalDate)} · mínimo ${c.passScore} pts</p>` : '<h2>Nenhum curso cadastrado</h2>'}</div>
+      <div class="btns">${c ? `<button class="btn" data-act="course-edit">Editar curso</button>` : ''}<button class="btn" data-act="course-new">+ Novo curso</button></div></div>`;
+    if (!c) return head + UI.empty('Cadastre um curso para começar.');
+    let ds = L.disciplines(c.id);
+    const total = ds.length;
+    if (filter === 'pendentes') ds = ds.filter(d => L.discStats(d).pct < 1);
+    if (filter === 'andamento') ds = ds.filter(d => ['cursando', 'risco'].includes(L.situation(d).key));
+    return `${head}<div class="toolbar"><div class="seg">${[['todos', 'Todas'], ['andamento', 'Em andamento'], ['pendentes', 'Com pendências']].map(([k, l]) => `<button class="${filter === k ? 'on' : ''}" data-act="grade-filter" data-f="${k}">${l}</button>`).join('')}</div>
+      <div class="btns"><button class="btn" data-act="disc-spread" title="Redistribui os períodos das disciplinas não concluídas">Redistribuir períodos</button><button class="btn primary" data-act="disc-new">+ Disciplina</button></div></div>
+      ${ds.length ? ds.map(discCard).join('') : UI.empty(total ? 'Nenhuma disciplina neste filtro.' : 'Nenhuma disciplina cadastrada.')}`;
+  }
+
+  /* ---------- formulários ---------- */
+  function courseForm(c) {
+    const isNew = !c; c = c || { name: '', institution: '', start: U.today(), end: '', goalDate: '', totalHours: 360, passScore: 70 };
+    UI.form({ title: isNew ? 'Novo curso' : 'Editar curso', fields: [
+      { name: 'name', label: 'Nome do curso', value: c.name, required: true }, { name: 'institution', label: 'Instituição / turma', value: c.institution },
+      { name: 'start', label: 'Início', type: 'date', value: c.start, required: true, half: true }, { name: 'end', label: 'Prazo oficial', type: 'date', value: c.end, required: true, half: true },
+      { name: 'goalDate', label: 'Meta pessoal de conclusão', type: 'date', value: c.goalDate, half: true }, { name: 'totalHours', label: 'Carga horária total (h)', type: 'number', value: c.totalHours, min: 1, required: true, half: true },
+      { name: 'passScore', label: 'Nota mínima para aprovação', type: 'number', value: c.passScore, min: 0, max: 100, required: true, half: true }],
+      onSubmit: v => { if (v.end < v.start) return 'O prazo oficial deve ser depois do início.';
+        if (isNew) { c = Object.assign({ id: U.uid(), tccEnabled: false }, v); S().courses.push(c); S().settings.activeCourseId = c.id; Seed.TCC_STAGES.forEach(st => S().tcc.push({ id: U.uid(), courseId: c.id, stage: st, title: st, due: '', status: 'todo', notes: '' })); }
+        else Object.assign(c, v);
+        App.commit(isNew ? 'Curso criado. Adicione as disciplinas.' : 'Curso atualizado.'); },
+      onDelete: isNew ? null : () => { L.removeCourse(c.id); App.commit('Curso excluído.'); }, deleteLabel: 'Excluir curso' });
+  }
+
+  function discForm(d) {
+    const c = L.course(), isNew = !d;
+    d = d || { name: '', hours: 24, start: '', end: '', priority: 2, difficulty: 2, lessonMin: 60, notes: '' };
+    UI.form({ title: isNew ? 'Nova disciplina' : 'Editar disciplina', fields: [
+      { name: 'name', label: 'Nome', value: d.name, required: true },
+      { name: 'order', label: 'Ordem', type: 'number', value: d.order || L.disciplines(c.id).length + 1, min: 1, step: 1, required: true, half: true }, { name: 'hours', label: 'Carga horária (h)', type: 'number', value: d.hours, min: 0, required: true, half: true },
+      { name: 'start', label: 'Abertura no AVA', type: 'date', value: d.start, half: true }, { name: 'end', label: 'Prazo final no AVA', type: 'date', value: d.end, half: true },
+      { name: 'lessonMin', label: 'Duração média da videoaula (min)', type: 'number', value: d.lessonMin, min: 1, required: true, half: true, hint: 'A quantidade de aulas é definida em cada assunto.' },
+      { name: 'priority', label: 'Prioridade', type: 'select', value: d.priority, options: UI.levelOptions(L.LEVEL), half: true },
+      { name: 'difficulty', label: 'Dificuldade', type: 'select', value: d.difficulty, options: UI.levelOptions(L.DIFF), half: true },
+      { name: 'notes', label: 'Anotações', type: 'textarea', value: d.notes }],
+      onSubmit: v => { if (v.start && v.end && v.end < v.start) return 'O prazo final deve ser depois da abertura.';
+        v.priority = Number(v.priority); v.difficulty = Number(v.difficulty); v.order = Math.round(v.order);
+        const datesChanged = v.start !== d.start || v.end !== d.end;
+        if (isNew) { d = Object.assign({ id: U.uid(), courseId: c.id, deliverables: [], estimated: false }, v); S().disciplines.push(d); open.add(d.id); }
+        else { Object.assign(d, v); if (datesChanged) d.estimated = false; }
+        App.commit(isNew ? 'Disciplina criada.' : 'Disciplina atualizada.'); },
+      onDelete: isNew ? null : () => { L.removeDiscipline(d.id); App.commit('Disciplina excluída.'); } });
+  }
+
+  function topicForm(t, did) {
+    const isNew = !t; t = t || Seed.newTopic(did, '', L.topics(did).length + 1, 1);
+    UI.form({ title: isNew ? 'Novo assunto' : 'Editar assunto', fields: [
+      { name: 'name', label: 'Assunto', value: t.name, required: true },
+      { name: 'lessons', label: 'Quantidade de videoaulas', type: 'number', value: t.lessons, min: 1, step: 1, required: true, half: true }, { name: 'watched', label: 'Aulas assistidas', type: 'number', value: t.watched, min: 0, step: 1, required: true, half: true },
+      { name: 'status', label: 'Situação (Kanban)', type: 'select', value: t.status, options: L.STATUS, half: true }, { name: 'order', label: 'Ordem', type: 'number', value: t.order, min: 1, step: 1, required: true, half: true },
+      { name: 'priority', label: 'Prioridade', type: 'select', value: t.priority, options: UI.levelOptions(L.LEVEL), half: true }, { name: 'difficulty', label: 'Dificuldade', type: 'select', value: t.difficulty, options: UI.levelOptions(L.DIFF), half: true },
+      { name: 'noPractice', label: 'Assunto apenas teórico (sem prática em software)', type: 'checkbox', value: t.noPractice }],
+      onSubmit: v => { if (v.watched > v.lessons) return 'As aulas assistidas não podem superar o total.';
+        const stChanged = v.status !== t.status, wChanged = Math.round(v.watched) !== t.watched;
+        Object.assign(t, { name: v.name, lessons: Math.round(v.lessons), watched: Math.round(v.watched), order: Math.round(v.order), priority: Number(v.priority), difficulty: Number(v.difficulty), noPractice: v.noPractice });
+        if (stChanged) L.setStatus(t, v.status); else if (wChanged || isNew) L.autoStatus(t);
+        if (isNew) S().topics.push(t);
+        App.commit(isNew ? 'Assunto criado.' : 'Assunto atualizado.'); },
+      onDelete: isNew ? null : () => { L.removeTopic(t.id); App.commit('Assunto excluído.'); } });
+  }
+  App.topicForm = topicForm;
+
+  /* detalhe do assunto: anotações, links e subtópicos */
+  function topicDetail(id) {
+    const t = L.topic(id), d = L.discipline(t.disciplineId);
+    const body = () => `<p class="muted">${e(d.name)} · ${UI.badge(L.STATUS_LABEL[t.status], 'st-' + t.status)} · ${L.watchedOf(t)}/${t.lessons} aulas${L.practiceTarget(t) ? ` · prática ${U.fmtMin(t.practiceMin || 0)}/${U.fmtMin(L.practiceTarget(t))}` : ''}${t.nextReviewAt ? ` · próxima revisão ${U.fmtDate(t.nextReviewAt)}` : ''}</p>
+      <h4 class="sub">Subtópicos</h4>
+      ${t.subtopics.length ? `<ul class="list compact">${t.subtopics.map(s => `<li><label class="check grow"><input type="checkbox" data-sub="${s.id}" ${s.done ? 'checked' : ''}> <span class="${s.done ? 'strike' : ''}">${e(s.text)}</span></label><button class="icon-btn" data-subdel="${s.id}" aria-label="Excluir subtópico">✕</button></li>`).join('')}</ul>` : '<p class="muted">Nenhum subtópico.</p>'}
+      <div class="inline-add"><input type="text" id="sub-new" placeholder="Novo subtópico" aria-label="Novo subtópico"><button class="btn sm" data-subadd>Adicionar</button></div>
+      <h4 class="sub">Links e materiais</h4>
+      ${t.links.length ? `<ul class="list compact">${t.links.map((l, i) => `<li><a class="grow" href="${e(U.safeUrl(l.url))}" target="_blank" rel="noopener">🔗 ${e(l.label || l.url)}</a><button class="icon-btn" data-linkdel="${i}" aria-label="Excluir link">✕</button></li>`).join('')}</ul>` : '<p class="muted">Nenhum link (material da aula, normas, arquivos de modelo).</p>'}
+      <div class="inline-add"><input type="text" id="link-label" placeholder="Descrição" aria-label="Descrição do link"><input type="text" id="link-url" placeholder="https://… ou caminho do arquivo" aria-label="Endereço do link"><button class="btn sm" data-linkadd>Adicionar</button></div>
+      <h4 class="sub">Anotações</h4><textarea id="topic-notes" rows="5" placeholder="Resumo, dúvidas, comandos do software…" aria-label="Anotações">${e(t.notes)}</textarea>`;
+    const m = UI.modal({ title: t.name, wide: true, body: body(), footer: `<button class="btn ghost" data-edit>Editar assunto</button><span class="spacer"></span><button class="btn primary" data-close>Concluir</button>`, onClose: () => App.commit() });
+    const keep = () => { const n = m.body.querySelector('#topic-notes'); if (n) t.notes = n.value; };
+    const redraw = () => { keep(); Store.save(); m.set(body()); };
+    m.body.addEventListener('input', ev => { if (ev.target.id === 'topic-notes') { t.notes = ev.target.value; } });
+    m.body.addEventListener('change', ev => { const el = ev.target; if (el.dataset.sub) { t.subtopics.find(s => s.id === el.dataset.sub).done = el.checked; redraw(); } });
+    m.body.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; if (ev.target.id === 'sub-new') m.body.querySelector('[data-subadd]').click(); if (ev.target.id === 'link-url' || ev.target.id === 'link-label') m.body.querySelector('[data-linkadd]').click(); });
+    m.body.addEventListener('click', ev => { const el = ev.target.closest('button'); if (!el) return;
+      if (el.dataset.subdel) { t.subtopics = t.subtopics.filter(s => s.id !== el.dataset.subdel); redraw(); }
+      else if (el.hasAttribute('data-subadd')) { const v = m.body.querySelector('#sub-new').value.trim(); if (v) { t.subtopics.push({ id: U.uid(), text: v, done: false }); redraw(); m.body.querySelector('#sub-new').focus(); } }
+      else if (el.dataset.linkdel !== undefined) { t.links.splice(Number(el.dataset.linkdel), 1); redraw(); }
+      else if (el.hasAttribute('data-linkadd')) { const url = m.body.querySelector('#link-url').value.trim(), label = m.body.querySelector('#link-label').value.trim(); if (url) { t.links.push({ label, url }); redraw(); } } });
+    m.footer.querySelector('[data-edit]').addEventListener('click', () => { keep(); m.close(); topicForm(t); });
+  }
+  App.topicDetail = topicDetail;
+
+  Object.assign(App.actions, {
+    'grade-filter': d => { filter = d.f; App.render(); },
+    'course-new': () => courseForm(null), 'course-edit': () => courseForm(L.course()),
+    'disc-toggle': d => { open.has(d.id) ? open.delete(d.id) : open.add(d.id); App.render(); },
+    'disc-new': () => discForm(null), 'disc-edit': d => discForm(L.discipline(d.id)),
+    'disc-complete': d => UI.confirm('Marcar todas as aulas desta disciplina como assistidas? As revisões serão agendadas.', () => { L.topics(d.id).forEach(t => { if (t.status !== 'dominado') { t.watched = t.lessons; L.autoStatus(t); } }); App.commit('Aulas marcadas como assistidas.'); }, 'Marcar'),
+    'disc-spread': () => { const c = L.course(), pend = L.disciplines(c.id).filter(d => L.discStats(d).pct < 1);
+      if (!pend.length) return UI.toast('Não há disciplinas pendentes.', 'warn');
+      UI.form({ title: 'Redistribuir períodos', intro: `Divide igualmente o intervalo entre as <strong>${pend.length} disciplinas não concluídas</strong>, na ordem da grade. Use quando não tiver as datas do AVA ou depois de um atraso.`, submit: 'Redistribuir', fields: [
+        { name: 'from', label: 'De', type: 'date', value: U.today(), required: true, half: true }, { name: 'to', label: 'Até', type: 'date', value: c.goalDate || c.end, required: true, half: true }],
+        onSubmit: v => { if (v.to <= v.from) return 'A data final deve ser depois da inicial.'; Seed.spread(pend, v.from, v.to); App.commit('Períodos redistribuídos.'); } }); },
+    'topic-new': d => topicForm(null, d.id), 'topic-edit': d => topicForm(L.topic(d.id)), 'topic-detail': d => topicDetail(d.id),
+    'topic-step': d => { const t = L.topic(d.id); L.watch(t, Number(d.n)); App.commit(); },
+  });
+})();
+</script>
+  <script>
+/* avaliacoes.js — provas, atividades, notas acumuladas e risco de reprovação */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  let filter = '';
+  App.views.avaliacoes = { title: 'Avaliações e notas', render };
+  const isGraded = a => a.score !== null && a.score !== '' && a.score !== undefined;
+
+  function render() {
+    const c = L.course(), today = U.today(), all = L.disciplines(c.id);
+    const ds = all.filter(d => (!filter || d.id === filter) && (filter || L.grade(d).count));
+    const cards = ds.map(d => { const g = L.grade(d), sit = L.situation(d), as = L.assessments(d.id);
+      return `<section class="card ${sit.key === 'risco' ? 'alert' : ''}"><header><h3>${d.order}. ${e(d.name)}</h3><span class="badges">${UI.sitBadge(sit)}<button class="btn sm" data-act="assess-new" data-disc="${d.id}">+ Avaliação</button></span></header>
+        ${sit.risks.length ? `<p class="risk">⚠ Risco de reprovação: ${e(sit.risks.join(' · '))}</p>` : ''}
+        <div class="grade-sum"><div><strong>${U.fmtNum(g.obtained)}</strong><span>pontos obtidos</span></div><div><strong>${g.missing ? U.fmtNum(g.missing) : '✓'}</strong><span>${g.missing ? `faltam para os ${g.pass}` : 'mínimo atingido'}</span></div><div><strong>${U.fmtNum(g.pendingPts)}</strong><span>pontos ainda em disputa</span></div><div><strong>${U.fmtNum(g.total)}</strong><span>pontos cadastrados</span></div></div>
+        <div class="grade-bar" data-tip="${U.fmtNum(g.obtained)} obtidos · mínimo ${g.pass}"><span class="${g.obtained >= g.pass ? 'ok' : ''}" style="width:${U.clamp(g.obtained, 0, 100)}%"></span><i style="left:${g.pass}%"></i></div>
+        ${as.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Avaliação</th><th>Prazo</th><th class="num">Valor</th><th class="num">Nota</th><th></th></tr></thead><tbody>${as.map(a => { const dd = a.due ? U.diff(today, a.due) : null;
+          return `<tr><td><strong>${e(a.title)}</strong><small>${e(L.ASSESS_TYPES[a.type] || '')}</small></td>
+            <td>${U.fmtDate(a.due)}${isGraded(a) ? '' : a.delivered ? `<small>${UI.badge('entregue · aguardando nota', 'info')}</small>` : dd !== null ? `<small>${UI.badge(dd < 0 ? '⚠ vencida ' + U.relDays(dd) : U.relDays(dd), dd < 0 || dd <= 3 ? 'bad' : dd <= 10 ? 'warn' : 'mute')}</small>` : ''}</td>
+            <td class="num">${U.fmtNum(a.points)}</td><td class="num">${isGraded(a) ? `<strong>${U.fmtNum(a.score)}</strong>` : '—'}</td>
+            <td class="num nowrap">${isGraded(a) ? '' : `<button class="btn sm primary" data-act="assess-grade" data-id="${a.id}">Lançar nota</button>`}<button class="btn sm ghost" data-act="assess-edit" data-id="${a.id}">Editar</button></td></tr>`; }).join('')}</tbody></table></div>` : UI.empty('Nenhuma avaliação cadastrada nesta disciplina.')}</section>`; }).join('');
+
+    const hist = L.courseAssessments(c.id).filter(isGraded).sort((a, b) => (b.gradedAt || b.due || '').localeCompare(a.gradedAt || a.due || ''));
+    const histCard = `<section class="card"><header><h3>Histórico de notas</h3></header>${hist.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Avaliação</th><th>Disciplina</th><th class="num">Nota</th><th class="num">Aproveit.</th></tr></thead><tbody>${hist.map(a => `<tr><td>${U.fmtDate(a.gradedAt || a.due)}</td><td>${e(a.title)}</td><td>${e(L.discipline(a.disciplineId).name)}</td><td class="num">${U.fmtNum(a.score)} / ${U.fmtNum(a.points)}</td><td class="num">${a.points ? Math.round(a.score / a.points * 100) + '%' : '—'}</td></tr>`).join('')}</tbody></table></div>` : UI.empty('As notas lançadas aparecem aqui.')}</section>`;
+
+    return `<div class="toolbar"><div class="field inline"><label for="af">Disciplina</label><select id="af" data-change="assess-filter">${UI.discOptions('Todas com avaliações').map(([v, l]) => `<option value="${v}" ${v === filter ? 'selected' : ''}>${e(l)}</option>`).join('')}</select></div>
+      <div class="btns"><button class="btn primary" data-act="assess-new" data-disc="${filter}">+ Nova avaliação</button></div></div>
+      ${cards || UI.empty('Nenhuma avaliação cadastrada. Inclua as provas e atividades de cada disciplina com data limite e valor em pontos.', '<button class="btn primary" data-act="assess-new">Cadastrar primeira avaliação</button>')}${histCard}`;
+  }
+
+  function assessForm(a, preset = {}) {
+    const isNew = !a; a = a || { disciplineId: preset.disc || '', type: 'prova', title: '', due: preset.date || '', points: null, score: null, estMin: 60, delivered: false };
+    UI.form({ title: isNew ? 'Nova avaliação' : 'Editar avaliação', fields: [
+      { name: 'disciplineId', label: 'Disciplina', type: 'select', value: a.disciplineId, options: UI.discOptions('— Selecione —'), required: true },
+      { name: 'title', label: 'Título', value: a.title, required: true, placeholder: 'Ex.: Prova final, Atividade 1' },
+      { name: 'type', label: 'Tipo', type: 'select', value: a.type, options: UI.levelOptions(L.ASSESS_TYPES), half: true }, { name: 'due', label: 'Data limite', type: 'date', value: a.due, half: true },
+      { name: 'points', label: 'Valor (pontos)', type: 'number', value: a.points, min: 0, max: 100, required: true, half: true }, { name: 'score', label: 'Nota obtida', type: 'number', value: a.score, min: 0, half: true, hint: 'Deixe vazio enquanto não houver nota.' },
+      { name: 'estMin', label: 'Tempo estimado para fazer (min)', type: 'number', value: a.estMin, min: 5, required: true, half: true },
+      { name: 'delivered', label: 'Já entregue (aguardando nota)', type: 'checkbox', value: a.delivered, half: true }],
+      onSubmit: v => { if (v.score !== null && v.score > v.points) return 'A nota não pode ser maior que o valor da avaliação.';
+        if (v.score !== null && !isGraded(a)) v.gradedAt = U.today();
+        if (isNew) S().assessments.push(Object.assign({ id: U.uid() }, v)); else Object.assign(a, v);
+        App.commit(isNew ? 'Avaliação cadastrada.' : 'Avaliação atualizada.'); },
+      onDelete: isNew ? null : () => { S().assessments = S().assessments.filter(x => x.id !== a.id); App.commit('Avaliação excluída.'); } });
+  }
+
+  /** Concluir avaliação a partir do plano: marca como entregue e, se houver, lança a nota. */
+  App.assessDeliver = function (id, key) {
+    const a = S().assessments.find(x => x.id === id), d = L.discipline(a.disciplineId);
+    UI.form({ title: key ? 'Concluir avaliação' : 'Lançar nota', intro: `<strong>${e(a.title)}</strong> · ${e(d.name)} · vale ${U.fmtNum(a.points)} pts`, submit: 'Registrar', fields: [
+      { name: 'score', label: 'Nota obtida', type: 'number', value: a.score, min: 0, max: a.points, half: true, hint: key ? 'Deixe vazio se a nota ainda não saiu.' : '' , required: !key },
+      { name: 'min', label: 'Tempo gasto (min)', type: 'number', value: key ? (a.estMin || 60) : 0, min: 0, half: true }],
+      onSubmit: v => { a.delivered = true; if (v.score !== null) { a.score = v.score; a.gradedAt = U.today(); }
+        L.logSession({ minutes: v.min || 0, type: 'avaliacao', disciplineId: d.id, note: a.title });
+        if (key) App.logDone(key, a.title, d.name, v.min || 0);
+        const g = L.grade(d); App.commit(v.score !== null ? (g.missing ? `Nota lançada. Faltam ${U.fmtNum(g.missing)} pts para os ${g.pass}.` : 'Nota lançada. Mínimo atingido! 🎉') : 'Avaliação marcada como entregue.'); } });
+  };
+
+  Object.assign(App.actions, {
+    'assess-filter': (d, el) => { filter = el.value; App.render(); },
+    'assess-new': d => { UI.closeAll(); assessForm(null, { disc: d.disc || '', date: d.date || '' }); },
+    'assess-edit': d => assessForm(S().assessments.find(a => a.id === d.id)),
+    'assess-grade': d => App.assessDeliver(d.id, null),
+  });
+})();
+</script>
+  <script>
+/* kanban.js — quadro Kanban dos assuntos (arrastar e soltar + botões para toque) */
+(() => {
+  const e = U.esc;
+  let filter = 'ativos';
+  App.views.kanban = { title: 'Quadro Kanban', render, after };
+
+  function render() {
+    const c = L.course(), today = U.today(), ds = L.disciplines(c.id);
+    let ids;
+    if (filter === 'todos') ids = ds.map(d => d.id);
+    else if (filter === 'ativos') { ids = ds.filter(d => ['cursando', 'risco'].includes(L.situation(d).key)).map(d => d.id); if (!ids.length && ds.length) ids = [(ds.find(d => L.discStats(d).pct < 1) || ds[0]).id]; }
+    else ids = [filter];
+    const ts = L.courseTopics(c.id).filter(t => ids.includes(t.disciplineId));
+    const cols = L.STATUS.map(([k, label], ci) => { const list = ts.filter(t => t.status === k).sort((a, b) => b.priority - a.priority || L.discipline(a.disciplineId).order - L.discipline(b.disciplineId).order || a.order - b.order);
+      return `<div class="kcol" data-status="${k}"><h3>${label} <span class="count">${list.length}</span></h3><div class="kcards">${list.map(t => { const d = L.discipline(t.disciplineId), left = d.end ? U.diff(today, d.end) : null;
+        return `<article class="kcard p${t.priority}" draggable="true" data-id="${t.id}"><button class="link" data-act="topic-detail" data-id="${t.id}">${e(t.name)}</button>
+          <small>${d.order}. ${e(d.name)}</small>
+          <div class="kmeta">${d.end ? UI.badge('⚑ ' + U.fmtShort(d.end), left < 0 ? 'bad' : left <= 14 ? 'warn' : 'mute') : ''}${UI.prioBadge(t.priority) || UI.badge('Média', 'mute')}<span class="muted">${L.watchedOf(t)}/${t.lessons} aulas</span></div>
+          <div class="kacts"><button class="icon-btn" data-act="k-move" data-id="${t.id}" data-to="${ci - 1}" ${ci === 0 ? 'disabled' : ''} aria-label="Mover para a coluna anterior">‹</button>
+            <button class="icon-btn" data-act="k-prio" data-id="${t.id}" title="Alternar prioridade" aria-label="Alternar prioridade">▲</button><button class="icon-btn" data-act="topic-edit" data-id="${t.id}" aria-label="Editar">✎</button>
+            <button class="icon-btn" data-act="k-move" data-id="${t.id}" data-to="${ci + 1}" ${ci === L.STATUS.length - 1 ? 'disabled' : ''} aria-label="Mover para a próxima coluna">›</button></div></article>`; }).join('') || '<p class="muted pad">Solte um cartão aqui</p>'}</div></div>`; }).join('');
+    return `<div class="toolbar"><div class="field inline"><label for="kf">Mostrar</label><select id="kf" data-change="k-filter"><option value="ativos" ${filter === 'ativos' ? 'selected' : ''}>Disciplinas em andamento</option><option value="todos" ${filter === 'todos' ? 'selected' : ''}>Todas as disciplinas</option>${ds.map(d => `<option value="${d.id}" ${filter === d.id ? 'selected' : ''}>${d.order}. ${e(d.name)}</option>`).join('')}</select></div>
+      <p class="muted">Arraste os cartões entre as colunas ou use as setas ‹ ›.</p></div><div class="kanban">${cols}</div>`;
+  }
+
+  function move(id, status) { const t = L.topic(id); if (!t || t.status === status) return; L.setStatus(t, status); App.commit(`“${t.name}” → ${L.STATUS_LABEL[status]}`); }
+
+  function after(root) {
+    root.querySelectorAll('.kcard').forEach(c => {
+      c.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/plain', c.dataset.id); ev.dataTransfer.effectAllowed = 'move'; c.classList.add('dragging'); });
+      c.addEventListener('dragend', () => c.classList.remove('dragging'));
+    });
+    root.querySelectorAll('.kcol').forEach(col => {
+      col.addEventListener('dragover', ev => { ev.preventDefault(); col.classList.add('over'); });
+      col.addEventListener('dragleave', ev => { if (!col.contains(ev.relatedTarget)) col.classList.remove('over'); });
+      col.addEventListener('drop', ev => { ev.preventDefault(); col.classList.remove('over'); move(ev.dataTransfer.getData('text/plain'), col.dataset.status); });
+    });
+  }
+
+  Object.assign(App.actions, {
+    'k-filter': (d, el) => { filter = el.value; App.render(); },
+    'k-move': d => move(d.id, L.STATUS[Number(d.to)][0]),
+    'k-prio': d => { const t = L.topic(d.id); t.priority = t.priority === 3 ? 1 : t.priority + 1; App.commit('Prioridade: ' + L.LEVEL[t.priority]); },
+  });
+})();
+</script>
+  <script>
+/* pratica.js — sessões práticas em software, lista de softwares e entregáveis de estudo de caso */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  App.views.pratica = { title: 'Prática em software', render };
+
+  function render() {
+    const c = L.course(), ds = L.disciplines(c.id);
+    const ps = S().practices.filter(p => L.inCourse(p, c.id)).sort((a, b) => b.date.localeCompare(a.date));
+    const bySw = {}; ps.forEach(p => bySw[p.software || '—'] = (bySw[p.software || '—'] || 0) + p.minutes);
+    const swRows = Object.entries(bySw).sort((a, b) => b[1] - a[1]);
+    const list = ps.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Assunto</th><th>Software</th><th>O que foi modelado</th><th class="num">Tempo</th><th>Dificuldade</th><th></th></tr></thead><tbody>${ps.map(p => { const t = L.topic(p.topicId), d = L.discipline(p.disciplineId);
+      return `<tr><td>${U.fmtDate(p.date)}</td><td><strong>${e(t ? t.name : '—')}</strong><small>${e(d ? d.name : '')}</small></td><td>${e(p.software || '—')}</td><td>${e(p.what || '—')}</td><td class="num">${U.fmtMin(p.minutes)}</td><td>${UI.badge(L.RATING[p.difficulty] || '—', p.difficulty === 3 ? 'warn' : 'mute')}</td><td class="num"><button class="btn sm ghost" data-act="prac-edit" data-id="${p.id}">Editar</button></td></tr>`; }).join('')}</tbody></table></div>` : UI.empty('Nenhuma sessão prática registrada ainda.');
+    const dl = ds.map(d => { const n = d.deliverables.length, done = d.deliverables.filter(x => x.done).length;
+      return `<details class="day"><summary><span>${d.order}. ${e(d.name)}</span><span class="muted">${n ? `${done}/${n} entregues` : 'sem itens'}</span></summary>
+        <ul class="list compact">${d.deliverables.map(x => `<li><label class="check grow"><input type="checkbox" data-change="deliv-toggle" data-disc="${d.id}" data-id="${x.id}" ${x.done ? 'checked' : ''}> <span class="${x.done ? 'strike' : ''}">${e(x.text)}</span></label><button class="icon-btn" data-act="deliv-edit" data-disc="${d.id}" data-id="${x.id}" aria-label="Editar">✎</button></li>`).join('')}</ul>
+        <p class="pad"><button class="btn sm" data-act="deliv-new" data-disc="${d.id}">+ Entregável</button></p></details>`; }).join('');
+    return `<div class="toolbar"><p class="muted">Total praticado: <strong>${U.fmtMin(U.sum(ps, p => p.minutes))}</strong> em ${ps.length} ${ps.length === 1 ? 'sessão' : 'sessões'}</p><div class="btns"><button class="btn primary" data-act="prac-new">+ Registrar sessão prática</button></div></div>
+      <section class="card"><header><h3>Sessões práticas</h3></header>${list}</section>
+      <div class="grid2"><section class="card"><header><h3>Softwares</h3><button class="btn sm" data-act="sw-new">+ Software</button></header>
+        ${S().settings.softwares.length ? `<ul class="list compact">${S().settings.softwares.map((s, i) => `<li><div class="grow"><strong>${e(s)}</strong><small>${bySw[s] ? U.fmtMin(bySw[s]) + ' de prática' : 'ainda sem prática'}</small></div><button class="btn sm ghost" data-act="sw-edit" data-i="${i}">Editar</button></li>`).join('')}</ul>` : UI.empty('Nenhum software cadastrado.')}</section>
+      <section class="card"><header><h3>Tempo por software</h3></header>${swRows.length ? UI.hbars(swRows.map(([k, v]) => ({ label: k, value: v / 60, text: U.fmtMin(v), tip: `${k}: ${U.fmtMin(v)}` }))) : UI.empty('Sem dados de prática ainda.')}</section></div>
+      <section class="card"><header><h3>Entregáveis de estudo de caso</h3></header>${dl}</section>`;
+  }
+
+  /** Formulário de sessão prática. planKey é informado quando vem do plano do dia. */
+  App.practiceForm = function (p, topicId, planKey) {
+    const isNew = !p, t0 = topicId ? L.topic(topicId) : null;
+    p = p || { date: U.today(), disciplineId: t0 ? t0.disciplineId : '', topicId: topicId || '', software: S().settings.softwares[0] || '', what: '', minutes: t0 ? Math.min(60, L.practiceLeft(t0) || 45) : 45, difficulty: 2 };
+    const m = UI.form({ title: isNew ? 'Registrar sessão prática' : 'Editar sessão prática', fields: [
+      { name: 'disciplineId', label: 'Disciplina', type: 'select', value: p.disciplineId, options: UI.discOptions('— Selecione —'), required: true },
+      { name: 'topicId', label: 'Assunto', type: 'select', value: p.topicId, options: UI.topicOptions(p.disciplineId, '— Selecione —'), required: true },
+      { name: 'software', label: 'Software usado', type: 'select', value: p.software, options: [['', '— Nenhum —']].concat(S().settings.softwares.map(s => [s, s])).concat(p.software && !S().settings.softwares.includes(p.software) ? [[p.software, p.software]] : []), half: true },
+      { name: 'date', label: 'Data', type: 'date', value: p.date, required: true, half: true },
+      { name: 'what', label: 'O que foi modelado / praticado', type: 'textarea', value: p.what, rows: 2 },
+      { name: 'minutes', label: 'Tempo (min)', type: 'number', value: p.minutes, min: 1, required: true, half: true },
+      { name: 'difficulty', label: 'Dificuldade sentida', type: 'select', value: p.difficulty, options: UI.levelOptions(L.RATING), half: true }],
+      onSubmit: v => { v.minutes = Math.round(v.minutes); v.difficulty = Number(v.difficulty); const t = L.topic(v.topicId);
+        if (isNew) { const s = L.logSession({ date: v.date, minutes: v.minutes, type: 'pratica', disciplineId: v.disciplineId, topicId: v.topicId, note: v.what });
+          S().practices.push(Object.assign({ id: U.uid(), sessionId: s.id }, v)); L.addPractice(t, v.minutes, v.difficulty);
+          if (planKey) App.logDone(planKey, 'Prática: ' + t.name, L.discipline(v.disciplineId).name, v.minutes); }
+        else { const old = L.topic(p.topicId); if (old) old.practiceMin = Math.max(0, (old.practiceMin || 0) - p.minutes); if (t) t.practiceMin = (t.practiceMin || 0) + v.minutes;
+          const s = S().sessions.find(x => x.id === p.sessionId); if (s) Object.assign(s, { date: v.date, minutes: v.minutes, disciplineId: v.disciplineId, topicId: v.topicId, note: v.what });
+          Object.assign(p, v); }
+        App.commit(isNew ? 'Sessão prática registrada.' : 'Sessão atualizada.'); },
+      onDelete: isNew ? null : () => { const t = L.topic(p.topicId); if (t) t.practiceMin = Math.max(0, (t.practiceMin || 0) - p.minutes);
+        S().sessions = S().sessions.filter(x => x.id !== p.sessionId); S().practices = S().practices.filter(x => x.id !== p.id); App.commit('Sessão excluída.'); } });
+    const fm = m.body.querySelector('form');
+    fm.elements.disciplineId.addEventListener('change', ev => { fm.elements.topicId.innerHTML = UI.topicOptions(ev.target.value, '— Selecione —').map(([v, l]) => `<option value="${v}">${e(l)}</option>`).join(''); });
+  };
+
+  function textItem(title, value, onSave, onDelete) { UI.form({ title, fields: [{ name: 'text', label: 'Descrição', value, required: true }], onSubmit: v => onSave(v.text), onDelete }); }
+
+  Object.assign(App.actions, {
+    'prac-new': () => App.practiceForm(null), 'prac-edit': d => App.practiceForm(S().practices.find(p => p.id === d.id)),
+    'sw-new': () => textItem('Novo software', '', t => { if (S().settings.softwares.includes(t)) return 'Este software já está na lista.'; S().settings.softwares.push(t); App.commit('Software adicionado.'); }),
+    'sw-edit': d => { const i = Number(d.i), old = S().settings.softwares[i];
+      textItem('Editar software', old, t => { S().settings.softwares[i] = t; S().practices.forEach(p => { if (p.software === old) p.software = t; }); App.commit('Software atualizado.'); }, () => { S().settings.softwares.splice(i, 1); App.commit('Software removido da lista.'); }); },
+    'deliv-new': d => textItem('Novo entregável', '', t => { L.discipline(d.disc).deliverables.push({ id: U.uid(), text: t, done: false }); App.commit('Entregável adicionado.'); }),
+    'deliv-edit': d => { const disc = L.discipline(d.disc), x = disc.deliverables.find(y => y.id === d.id);
+      textItem('Editar entregável', x.text, t => { x.text = t; App.commit(); }, () => { disc.deliverables = disc.deliverables.filter(y => y !== x); App.commit('Entregável excluído.'); }); },
+    'deliv-toggle': (d, el) => { L.discipline(d.disc).deliverables.find(y => y.id === d.id).done = el.checked; Store.save(); const sp = el.nextElementSibling; if (sp) sp.classList.toggle('strike', el.checked); const sm = el.closest('details').querySelector('summary .muted'), ds = L.discipline(d.disc).deliverables; sm.textContent = `${ds.filter(x => x.done).length}/${ds.length} entregues`; },
+  });
+})();
+</script>
+  <script>
+/* revisoes.js — revisão espaçada */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  App.views.revisoes = { title: 'Revisão espaçada', render };
+
+  function row(t, today) {
+    const d = L.discipline(t.disciplineId), dd = U.diff(today, t.nextReviewAt), iv = S().settings.reviewIntervals;
+    return `<li><div class="grow"><strong>${e(t.name)}</strong><small>${e(d.name)} · etapa ${Math.min(t.reviewStage + 1, iv.length)} de ${iv.length}${t.lastReviewAt ? ` · última revisão ${U.relDays(U.diff(today, t.lastReviewAt))}` : t.studiedAt ? ` · estudado ${U.relDays(U.diff(today, t.studiedAt))}` : ''}${t.selfRating ? ` · autoavaliação: ${L.RATING[t.selfRating].toLowerCase()}` : ''}</small></div>
+      ${UI.badge(dd < 0 ? `⚠ atrasada ${-dd} ${dd === -1 ? 'dia' : 'dias'}` : U.relDays(dd) + (dd > 1 ? ` · ${U.fmtShort(t.nextReviewAt)}` : ''), dd < 0 ? 'bad' : dd === 0 ? 'warn' : 'mute')}
+      <div class="acts">${dd <= 0 ? `<button class="btn sm primary" data-act="rev-do" data-id="${t.id}">Revisar</button>` : `<button class="btn sm ghost" data-act="rev-do" data-id="${t.id}">Antecipar</button>`}<button class="btn sm ghost" data-act="rev-edit" data-id="${t.id}">Reagendar</button></div></li>`;
+  }
+
+  function render() {
+    const c = L.course(), today = U.today(), iv = S().settings.reviewIntervals;
+    const ts = L.courseTopics(c.id).filter(t => t.nextReviewAt && t.status !== 'dominado').sort((a, b) => a.nextReviewAt.localeCompare(b.nextReviewAt));
+    const due = ts.filter(t => t.nextReviewAt <= today), next = ts.filter(t => t.nextReviewAt > today);
+    const ids = new Set(L.courseTopics(c.id).map(t => t.id));
+    const log = S().reviewLog.filter(r => ids.has(r.topicId)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+    return `<div class="toolbar"><p class="muted">Intervalos: <strong>${iv.join(', ')} dias</strong> após o estudo. Fácil pula uma etapa · médio avança · difícil volta uma etapa. <a href="#config">Configurar</a></p>
+      <div class="btns"><button class="btn primary" data-act="rev-new">+ Agendar revisão</button></div></div>
+      <section class="card"><header><h3>Para hoje <span class="count">${due.length}</span></h3></header>${due.length ? `<ul class="list">${due.map(t => row(t, today)).join('')}</ul>` : UI.empty('Nenhuma revisão pendente para hoje.')}</section>
+      <section class="card"><header><h3>Agendadas <span class="count">${next.length}</span></h3></header>${next.length ? `<ul class="list">${next.slice(0, 40).map(t => row(t, today)).join('')}</ul>` : UI.empty('As revisões são agendadas automaticamente quando você conclui as aulas de um assunto.')}</section>
+      <section class="card"><header><h3>Histórico de revisões</h3></header>${log.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Assunto</th><th>Etapa</th><th>Autoavaliação</th></tr></thead><tbody>${log.map(r => { const t = L.topic(r.topicId); return `<tr><td>${U.fmtDate(r.date)}</td><td>${e(t ? t.name : '—')}</td><td>${r.stage + 1}ª</td><td>${UI.badge(L.RATING[r.rating], r.rating === 3 ? 'warn' : r.rating === 1 ? 'ok' : 'mute')}</td></tr>`; }).join('')}</tbody></table></div>` : UI.empty('Nenhuma revisão realizada ainda.')}</section>`;
+  }
+
+  App.reviewForm = function (topicId, planKey) {
+    const t = L.topic(topicId), d = L.discipline(t.disciplineId);
+    UI.form({ title: 'Registrar revisão', intro: `<strong>${e(t.name)}</strong><br>${e(d.name)}`, submit: 'Registrar revisão', fields: [
+      { name: 'rating', label: 'Como foi a revisão?', type: 'select', value: 2, options: [[1, 'Fácil — lembrei de tudo'], [2, 'Médio — lembrei com esforço'], [3, 'Difícil — preciso rever logo']] },
+      { name: 'min', label: 'Tempo gasto (min)', type: 'number', value: S().settings.reviewMin, min: 0, required: true, hint: 'Deixe 0 se já registrou pelo cronômetro.' }],
+      onSubmit: v => { const next = L.doReview(t, Number(v.rating)); L.logSession({ minutes: v.min, type: 'revisao', disciplineId: d.id, topicId: t.id });
+        if (planKey) App.logDone(planKey, 'Revisão: ' + t.name, d.name, v.min);
+        App.commit(next ? `Próxima revisão em ${U.fmtDate(next)}.` : 'Ciclo de revisões concluído — assunto dominado! 🎉'); } });
+  };
+
+  Object.assign(App.actions, {
+    'rev-do': d => App.reviewForm(d.id, null),
+    'rev-edit': d => { const t = L.topic(d.id);
+      UI.form({ title: 'Reagendar revisão', intro: e(t.name), fields: [{ name: 'date', label: 'Nova data', type: 'date', value: t.nextReviewAt, required: true }],
+        onSubmit: v => { t.nextReviewAt = v.date; App.commit('Revisão reagendada.'); }, onDelete: () => { t.nextReviewAt = ''; App.commit('Revisão cancelada.'); }, deleteLabel: 'Cancelar revisão' }); },
+    'rev-new': () => { const c = L.course(), first = (L.disciplines(c.id)[0] || {}).id || '';
+      const m = UI.form({ title: 'Agendar revisão', fields: [
+        { name: 'disciplineId', label: 'Disciplina', type: 'select', value: first, options: UI.discOptions('— Selecione —'), required: true },
+        { name: 'topicId', label: 'Assunto', type: 'select', value: '', options: UI.topicOptions(first, '— Selecione —'), required: true },
+        { name: 'date', label: 'Data da revisão', type: 'date', value: U.addDays(U.today(), 1), required: true }],
+        onSubmit: v => { const t = L.topic(v.topicId); t.nextReviewAt = v.date; if (t.reviewStage >= S().settings.reviewIntervals.length) t.reviewStage = 0; if (['nao', 'dominado'].includes(t.status)) t.status = 'revisao'; App.commit('Revisão agendada.'); } });
+      const fm = m.body.querySelector('form');
+      fm.elements.disciplineId.addEventListener('change', ev => { fm.elements.topicId.innerHTML = UI.topicOptions(ev.target.value, '— Selecione —').map(([v, l]) => `<option value="${v}">${e(l)}</option>`).join(''); }); },
+  });
+})();
+</script>
+  <script>
+/* cronometro.js — cronômetro de estudos, metas e histórico de sessões */
+const Timer = (() => {
+  const S = () => Store.state;
+  const elapsed = () => { const t = S().timer; return t ? t.acc + (t.startedAt ? Date.now() - t.startedAt : 0) : 0; };
+  const fmt = ms => { const s = Math.floor(ms / 1000); return `${U.pad(Math.floor(s / 3600))}:${U.pad(Math.floor(s / 60) % 60)}:${U.pad(s % 60)}`; };
+  function paint() {
+    const t = S() && S().timer, chip = document.getElementById('timer-chip');
+    if (chip) { chip.hidden = !t; if (t) chip.textContent = `${t.startedAt ? '●' : '❚❚'} ${fmt(elapsed())}`; }
+    const big = document.getElementById('timer-big'); if (big) big.textContent = fmt(elapsed());
+  }
+  return { elapsed, fmt, paint };
+})();
+
+(() => {
+  const e = U.esc, S = () => Store.state;
+  let sel = { type: 'aula', disciplineId: '', topicId: '' }, typeFilter = '';
+  App.views.cronometro = { title: 'Cronômetro e produtividade', render };
+
+  function render() {
+    const c = L.course(), t = S().timer, today = U.today(), ws = U.weekStart(today), cur = t || sel;
+    const mDay = L.minutesOn(today, c.id), mWeek = L.minutesBetween(ws, U.addDays(ws, 6), c.id), gDay = L.dailyGoal(today), gWeek = L.weeklyGoal();
+    const opt = (list, v) => list.map(([k, l]) => `<option value="${e(k)}" ${String(k) === String(v) ? 'selected' : ''}>${e(l)}</option>`).join('');
+    const ss = S().sessions.filter(s => s.courseId === c.id && (!typeFilter || s.type === typeFilter)).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+    const byType = {}; S().sessions.filter(s => s.courseId === c.id).forEach(s => byType[s.type] = (byType[s.type] || 0) + s.minutes);
+    return `<div class="grid2"><section class="card timer-card"><div id="timer-big" class="timer-big ${t && t.startedAt ? 'run' : ''}" aria-live="off">${Timer.fmt(Timer.elapsed())}</div>
+        <div class="form">
+          <div class="field half"><label for="tm-type">Tipo de sessão</label><select id="tm-type" data-change="tm-set" data-k="type">${opt(UI.levelOptions(L.SESSION_TYPES), cur.type)}</select></div>
+          <div class="field half"><label for="tm-disc">Disciplina</label><select id="tm-disc" data-change="tm-set" data-k="disciplineId">${opt(UI.discOptions(), cur.disciplineId)}</select></div>
+          <div class="field"><label for="tm-topic">Assunto</label><select id="tm-topic" data-change="tm-set" data-k="topicId">${opt(UI.topicOptions(cur.disciplineId), cur.topicId)}</select></div></div>
+        <div class="btns center">${!t ? `<button class="btn primary lg" data-act="tm-start">▶ Iniciar</button>` : `${t.startedAt ? `<button class="btn lg" data-act="tm-pause">❚❚ Pausar</button>` : `<button class="btn primary lg" data-act="tm-resume">▶ Retomar</button>`}<button class="btn primary lg" data-act="tm-stop">■ Finalizar e salvar</button><button class="btn ghost" data-act="tm-cancel">Descartar</button>`}</div>
+        <p class="muted center">Só o tempo com o cronômetro rodando é contado (horas líquidas). Ele continua mesmo se você fechar a página.</p></section>
+      <section class="card"><header><h3>Metas</h3><a class="btn sm ghost" href="#config">Ajustar</a></header>
+        <div class="goal"><div class="goal-top"><span>Hoje</span><strong>${U.fmtMin(mDay)} <small>de ${gDay ? U.fmtMin(gDay) : 'folga'}</small></strong></div>${UI.progress(gDay ? mDay / gDay : 0, mDay >= gDay && gDay ? 'ok' : '')}</div>
+        <div class="goal"><div class="goal-top"><span>Esta semana</span><strong>${U.fmtMin(mWeek)} <small>de ${U.fmtMin(gWeek)}</small></strong></div>${UI.progress(gWeek ? mWeek / gWeek : 0, mWeek >= gWeek ? 'ok' : '')}</div>
+        <h4 class="sub">Horas líquidas por tipo</h4>${Object.keys(byType).length ? UI.hbars(Object.entries(L.SESSION_TYPES).map(([k, l]) => ({ label: l, value: (byType[k] || 0) / 60, text: U.fmtMin(byType[k] || 0), tip: `${l}: ${U.fmtMin(byType[k] || 0)}` }))) : '<p class="muted">Sem sessões registradas.</p>'}</section></div>
+      <section class="card"><header><h3>Histórico de sessões</h3><span class="badges"><select data-change="tm-filter" aria-label="Filtrar por tipo">${opt([['', 'Todos os tipos']].concat(UI.levelOptions(L.SESSION_TYPES)), typeFilter)}</select><button class="btn sm" data-act="sess-new">+ Sessão manual</button></span></header>
+        ${ss.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Tipo</th><th>Disciplina / assunto</th><th class="num">Tempo</th><th></th></tr></thead><tbody>${ss.slice(0, 100).map(s => { const d = L.discipline(s.disciplineId), tp = L.topic(s.topicId);
+          return `<tr><td>${U.fmtDate(s.date)}</td><td>${UI.badge(L.SESSION_TYPES[s.type] || s.type, 'kind')}</td><td><strong>${e(d ? d.name : 'Geral')}</strong><small>${e(tp ? tp.name : s.note || '')}</small></td><td class="num">${U.fmtMin(s.minutes)}</td><td class="num"><button class="btn sm ghost" data-act="sess-edit" data-id="${s.id}">Editar</button></td></tr>`; }).join('')}</tbody></table></div>${ss.length > 100 ? '<p class="muted pad">Mostrando as 100 sessões mais recentes.</p>' : ''}` : UI.empty('Nenhuma sessão registrada.')}</section>`;
+  }
+
+  function sessForm(s) {
+    const isNew = !s; s = s || { date: U.today(), minutes: 30, type: 'aula', disciplineId: '', topicId: '', note: '' };
+    const m = UI.form({ title: isNew ? 'Nova sessão de estudo' : 'Editar sessão', fields: [
+      { name: 'date', label: 'Data', type: 'date', value: s.date, required: true, half: true }, { name: 'minutes', label: 'Tempo líquido (min)', type: 'number', value: s.minutes, min: 1, required: true, half: true },
+      { name: 'type', label: 'Tipo', type: 'select', value: s.type, options: UI.levelOptions(L.SESSION_TYPES), half: true }, { name: 'disciplineId', label: 'Disciplina', type: 'select', value: s.disciplineId, options: UI.discOptions(), half: true },
+      { name: 'topicId', label: 'Assunto', type: 'select', value: s.topicId, options: UI.topicOptions(s.disciplineId) }, { name: 'note', label: 'Observação', value: s.note }],
+      onSubmit: v => { if (v.date > U.today()) return 'A data não pode ser futura.'; v.minutes = Math.round(v.minutes);
+        if (isNew) { const x = L.logSession(v); x.createdAt = Date.now(); } else Object.assign(s, v);
+        App.commit(isNew ? 'Sessão registrada.' : 'Sessão atualizada.'); },
+      onDelete: isNew ? null : () => { S().sessions = S().sessions.filter(x => x.id !== s.id); const p = S().practices.find(x => x.sessionId === s.id);
+        if (p) { const t = L.topic(p.topicId); if (t) t.practiceMin = Math.max(0, (t.practiceMin || 0) - p.minutes); S().practices = S().practices.filter(x => x !== p); } App.commit('Sessão excluída.'); } });
+    const fm = m.body.querySelector('form');
+    fm.elements.disciplineId.addEventListener('change', ev => { fm.elements.topicId.innerHTML = UI.topicOptions(ev.target.value).map(([v, l]) => `<option value="${v}">${e(l)}</option>`).join(''); });
+  }
+
+  Object.assign(App.actions, {
+    'tm-set': (d, el) => { const o = S().timer || sel; o[d.k] = el.value; if (d.k === 'disciplineId') o.topicId = ''; if (S().timer) Store.save(); App.render(); },
+    'tm-start': () => { S().timer = Object.assign({ startedAt: Date.now(), acc: 0, date: U.today() }, sel); App.commit(); },
+    'tm-pause': () => { const t = S().timer; t.acc += Date.now() - t.startedAt; t.startedAt = null; App.commit(); },
+    'tm-resume': () => { S().timer.startedAt = Date.now(); App.commit(); },
+    'tm-cancel': () => UI.confirm('Descartar o tempo cronometrado sem salvar?', () => { S().timer = null; App.commit('Cronômetro descartado.'); }, 'Descartar'),
+    'tm-stop': () => { const t = S().timer, min = Math.round(Timer.elapsed() / 60000);
+      if (min < 1) { S().timer = null; return App.commit('Sessão com menos de 1 minuto não foi registrada.'); }
+      const s = L.logSession({ date: U.today(), minutes: min, type: t.type, disciplineId: t.disciplineId, topicId: t.topicId }); s.createdAt = Date.now();
+      S().timer = null; sel = { type: t.type, disciplineId: t.disciplineId, topicId: t.topicId };
+      App.commit(`Sessão de ${U.fmtMin(min)} registrada.`); },
+    'tm-filter': (d, el) => { typeFilter = el.value; App.render(); },
+    'sess-new': () => sessForm(null), 'sess-edit': d => sessForm(S().sessions.find(s => s.id === d.id)),
+  });
+})();
+</script>
+  <script>
+/* tcc.js — módulo opcional de TCC com etapas, prazos e Kanban próprio */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  const COLS = [['todo', 'A fazer'], ['doing', 'Em andamento'], ['done', 'Concluído']];
+  App.views.tcc = { title: 'TCC', render, after };
+
+  function render() {
+    const c = L.course(), today = U.today(), ts = S().tcc.filter(x => x.courseId === c.id);
+    const done = ts.filter(x => x.status === 'done').length;
+    const cols = COLS.map(([k, label], ci) => { const list = ts.filter(x => x.status === k).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
+      return `<div class="kcol" data-status="${k}"><h3>${label} <span class="count">${list.length}</span></h3><div class="kcards">${list.map(x => { const dd = x.due ? U.diff(today, x.due) : null;
+        return `<article class="kcard" draggable="true" data-id="${x.id}"><button class="link" data-act="tcc-edit" data-id="${x.id}">${e(x.title)}</button><small>Etapa: ${e(x.stage)}</small>
+          <div class="kmeta">${x.due ? UI.badge('⚑ ' + U.fmtDate(x.due) + (k !== 'done' ? ' · ' + U.relDays(dd) : ''), k === 'done' ? 'mute' : dd < 0 ? 'bad' : dd <= 14 ? 'warn' : 'mute') : UI.badge('sem prazo', 'mute')}</div>${x.notes ? `<p class="knote">${e(x.notes)}</p>` : ''}
+          <div class="kacts"><button class="icon-btn" data-act="tcc-move" data-id="${x.id}" data-to="${ci - 1}" ${ci === 0 ? 'disabled' : ''} aria-label="Coluna anterior">‹</button><button class="icon-btn" data-act="tcc-edit" data-id="${x.id}" aria-label="Editar">✎</button><button class="icon-btn" data-act="tcc-move" data-id="${x.id}" data-to="${ci + 1}" ${ci === 2 ? 'disabled' : ''} aria-label="Próxima coluna">›</button></div></article>`; }).join('') || '<p class="muted pad">Solte um cartão aqui</p>'}</div></div>`; }).join('');
+    return `<div class="toolbar"><div><p class="muted">O TCC é opcional neste curso. Etapas: tema, orientação, cronograma, escrita, revisão e entrega. Etapas com prazo entram no planejamento e no calendário.</p>
+      <div class="disc-prog wide">${UI.progress(ts.length ? done / ts.length : 0, 'ok')}<span>${done}/${ts.length} concluídas</span></div></div><div class="btns"><button class="btn primary" data-act="tcc-new">+ Tarefa do TCC</button></div></div>
+      <div class="kanban three">${cols}</div>`;
+  }
+  function move(id, st) { const x = S().tcc.find(y => y.id === id); if (!x || x.status === st) return; x.status = st; App.commit(); }
+  function after(root) {
+    root.querySelectorAll('.kcard').forEach(c => { c.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/plain', c.dataset.id); c.classList.add('dragging'); }); c.addEventListener('dragend', () => c.classList.remove('dragging')); });
+    root.querySelectorAll('.kcol').forEach(col => { col.addEventListener('dragover', ev => { ev.preventDefault(); col.classList.add('over'); }); col.addEventListener('dragleave', ev => { if (!col.contains(ev.relatedTarget)) col.classList.remove('over'); });
+      col.addEventListener('drop', ev => { ev.preventDefault(); move(ev.dataTransfer.getData('text/plain'), col.dataset.status); }); });
+  }
+  function form(x) {
+    const isNew = !x; x = x || { stage: Seed.TCC_STAGES[0], title: '', due: '', status: 'todo', notes: '' };
+    UI.form({ title: isNew ? 'Nova tarefa do TCC' : 'Editar tarefa do TCC', fields: [
+      { name: 'title', label: 'Tarefa', value: x.title, required: true }, { name: 'stage', label: 'Etapa', type: 'select', value: x.stage, options: Seed.TCC_STAGES.map(s => [s, s]), half: true },
+      { name: 'status', label: 'Situação', type: 'select', value: x.status, options: COLS, half: true }, { name: 'due', label: 'Prazo', type: 'date', value: x.due, half: true },
+      { name: 'notes', label: 'Anotações', type: 'textarea', value: x.notes }],
+      onSubmit: v => { if (isNew) S().tcc.push(Object.assign({ id: U.uid(), courseId: L.course().id }, v)); else Object.assign(x, v); App.commit(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.'); },
+      onDelete: isNew ? null : () => { S().tcc = S().tcc.filter(y => y !== x); App.commit('Tarefa excluída.'); } });
+  }
+  Object.assign(App.actions, { 'tcc-new': () => form(null), 'tcc-edit': d => form(S().tcc.find(x => x.id === d.id)), 'tcc-move': d => move(d.id, COLS[Number(d.to)][0]) });
+})();
+</script>
+  <script>
+/* config.js — configurações, disponibilidade, metas, revisão, TCC e backup */
+(() => {
+  const e = U.esc, S = () => Store.state;
+  App.views.config = { title: 'Configurações', render };
+
+  function render() {
+    const s = S().settings, c = L.course(), order = [1, 2, 3, 4, 5, 6, 0];
+    return `<div class="grid2">
+      <section class="card"><header><h3>Tempo disponível por dia</h3></header><p class="muted">Minutos livres para estudar em cada dia da semana. É a base do planejamento automático.</p>
+        <div class="avail">${order.map(i => `<div class="field"><label for="av${i}">${U.DOW[i]}</label><input id="av${i}" type="number" min="0" max="1440" step="5" inputmode="numeric" value="${s.availability[i]}" data-change="cfg-avail" data-i="${i}"></div>`).join('')}</div>
+        <p class="muted">Total: <strong>${U.fmtMin(U.sum(s.availability))} por semana</strong></p></section>
+      <section class="card"><header><h3>Metas</h3></header><div class="form">
+        ${c ? `<div class="field half"><label for="cfg-goal">Meta pessoal de conclusão</label><input id="cfg-goal" type="date" value="${c.goalDate || ''}" data-change="cfg-goaldate"><small>Prazo oficial: ${U.fmtDate(c.end)}</small></div>` : ''}
+        <div class="field half"><label for="cfg-dg">Meta diária (min)</label><input id="cfg-dg" type="number" min="0" value="${s.dailyGoalMin}" data-change="cfg-num" data-k="dailyGoalMin"><small>0 = usar o tempo disponível do dia</small></div>
+        <div class="field half"><label for="cfg-wg">Meta semanal (min)</label><input id="cfg-wg" type="number" min="0" value="${s.weeklyGoalMin}" data-change="cfg-num" data-k="weeklyGoalMin"><small>0 = soma da disponibilidade</small></div></div></section>
+      <section class="card"><header><h3>Planejamento e revisão</h3></header><div class="form">
+        <div class="field half"><label for="cfg-iv">Intervalos de revisão (dias)</label><input id="cfg-iv" type="text" value="${s.reviewIntervals.join(', ')}" data-change="cfg-intervals"><small>Separados por vírgula. Padrão: 1, 7, 15, 30</small></div>
+        <div class="field half"><label for="cfg-rm">Duração de uma revisão (min)</label><input id="cfg-rm" type="number" min="5" value="${s.reviewMin}" data-change="cfg-num" data-k="reviewMin"></div>
+        <div class="field half"><label for="cfg-pr">Prática em software (% do tempo de aula)</label><input id="cfg-pr" type="number" min="0" max="200" value="${s.practiceRatio}" data-change="cfg-num" data-k="practiceRatio"><small>Equilíbrio entre teoria e prática</small></div>
+        <label class="check"><input type="checkbox" data-change="plan-advance" ${s.allowAdvance ? 'checked' : ''}> <span>Permitir adiantar disciplinas ainda não abertas no AVA</span></label></div></section>
+      <section class="card"><header><h3>Aparência e módulos</h3></header><div class="form">
+        <div class="field half"><label for="cfg-theme">Tema</label><select id="cfg-theme" data-change="cfg-theme"><option value="light" ${s.theme === 'light' ? 'selected' : ''}>Claro</option><option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Escuro</option></select></div>
+        ${c ? `<label class="check"><input type="checkbox" data-change="cfg-tcc" ${c.tccEnabled ? 'checked' : ''}> <span>Ativar módulo de TCC neste curso (opcional)</span></label>` : ''}</div></section>
+      <section class="card span2"><header><h3>Backup dos dados</h3></header><p class="muted">Os dados ficam salvos somente neste navegador. Exporte um backup regularmente para não perdê-los ao trocar de computador ou limpar o navegador.</p>
+        <div class="btns"><button class="btn primary" data-act="cfg-export">⬇ Exportar backup (JSON)</button><button class="btn" data-act="cfg-import">⬆ Importar backup</button><input type="file" id="cfg-file" accept=".json,application/json" hidden><span class="spacer"></span><button class="btn danger ghost" data-act="cfg-reset">Restaurar dados iniciais</button></div></section></div>`;
+  }
+
+  Object.assign(App.actions, {
+    'cfg-avail': (d, el) => { S().settings.availability[Number(d.i)] = U.clamp(Math.round(U.num(el.value)), 0, 1440); App.commit(); },
+    'cfg-num': (d, el) => { S().settings[d.k] = Math.max(Number(el.min) || 0, Math.round(U.num(el.value))); App.commit('Configuração salva.'); },
+    'cfg-goaldate': (d, el) => { L.course().goalDate = el.value; App.commit('Meta atualizada.'); },
+    'cfg-intervals': (d, el) => { const iv = el.value.split(/[,;\s]+/).map(x => Math.round(U.num(x))).filter(x => x > 0);
+      if (!iv.length) { UI.toast('Informe ao menos um intervalo em dias.', 'bad'); return App.render(); }
+      S().settings.reviewIntervals = iv; App.commit('Intervalos de revisão salvos.'); },
+    'cfg-theme': (d, el) => { S().settings.theme = el.value; App.commit(); },
+    'cfg-tcc': (d, el) => { L.course().tccEnabled = el.checked; App.commit(el.checked ? 'Módulo de TCC ativado.' : 'Módulo de TCC desativado.'); },
+    'cfg-export': () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([Store.exportJSON()], { type: 'application/json' })); a.download = `backup-pos-bim-${U.today()}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); UI.toast('Backup exportado.'); },
+    'cfg-import': () => { const f = document.getElementById('cfg-file');
+      f.onchange = () => { const file = f.files[0]; if (!file) return; const r = new FileReader();
+        r.onload = () => UI.confirm('Importar este backup? Os dados atuais serão substituídos.', () => { try { Store.importJSON(r.result); Planner.trackToday(); App.render(); UI.toast('Backup importado.'); } catch (err) { UI.toast(err.message || 'Arquivo inválido.', 'bad'); } }, 'Importar');
+        r.readAsText(file); f.value = ''; };
+      f.click(); },
+    'cfg-reset': () => UI.confirm('Apagar todos os dados e restaurar a grade inicial da pós BIM? Exporte um backup antes, se quiser guardar seu progresso.', () => { Store.reset(); App.render(); location.reload(); }, 'Apagar e restaurar'),
+  });
+})();
+</script>
+  <script>App.init();</script>
+</body>
+</html>

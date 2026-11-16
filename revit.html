@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultra-aprendizado Revit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: barra lateral fixa + área de trabalho; no celular a navegação vira faixa rolável no topo. */
+:root{
+  --fundo:#eef1f4; --painel:#ffffff; --painel2:#f5f7fa; --linha:#d4dae2;
+  --tinta:#15262a; --tinta2:#51656a; --acento:#1b5a9e; --acento-tinta:#ffffff; --acento-suave:#dfe9f5;
+  --direto:#1b5a9e; --drill:#b86a00; --recup:#5a4bb5; --teoria:#6b7a80; --folga:#9aa7ab;
+  --bom:#1f7a3a; --aviso:#a86200; --critico:#b3261e; --aviso-fundo:#fff3dc; --critico-fundo:#fde8e6; --bom-fundo:#e2f3e6;
+  --f-titulo:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --f-corpo:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --raio:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --fundo:#0f1719; --painel:#172225; --painel2:#1d2a2e; --linha:#2c3c40;
+    --tinta:#e6eeec; --tinta2:#9db0b3; --acento:#7fb4ee; --acento-tinta:#08182b; --acento-suave:#1b2e45;
+    --direto:#7fb4ee; --drill:#f0a742; --recup:#a79bf2; --teoria:#9aaab0; --folga:#6d7d82;
+    --bom:#6fcf8a; --aviso:#f0b452; --critico:#f2857d; --aviso-fundo:#3a2c10; --critico-fundo:#40201d; --bom-fundo:#17341f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --fundo:#0f1719; --painel:#172225; --painel2:#1d2a2e; --linha:#2c3c40;
+  --tinta:#e6eeec; --tinta2:#9db0b3; --acento:#7fb4ee; --acento-tinta:#08182b; --acento-suave:#1b2e45;
+  --direto:#7fb4ee; --drill:#f0a742; --recup:#a79bf2; --teoria:#9aaab0; --folga:#6d7d82;
+  --bom:#6fcf8a; --aviso:#f0b452; --critico:#f2857d; --aviso-fundo:#3a2c10; --critico-fundo:#40201d; --bom-fundo:#17341f;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--fundo);color:var(--tinta);font:15px/1.5 var(--f-corpo);-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--f-titulo);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:30px} h2{font-size:22px} h3{font-size:18px}
+p{margin:0} a{color:var(--acento)}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+
+#app{display:grid;grid-template-columns:232px 1fr;height:100%}
+#lateral{background:var(--painel);border-right:1px solid var(--linha);padding:18px 12px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.marca{padding:0 8px;display:flex;flex-direction:column;gap:2px}
+.marca b{font-family:var(--f-titulo);font-size:21px;font-weight:600;line-height:1.1}
+.marca span{font-size:12px;color:var(--tinta2)}
+nav{display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;color:var(--tinta);text-decoration:none;font-size:14.5px}
+nav a:hover{background:var(--painel2)}
+nav a.ativo{background:var(--acento-suave);color:var(--acento);font-weight:600}
+nav .cont{font-size:12px;background:var(--acento);color:var(--acento-tinta);border-radius:99px;padding:0 7px;font-weight:600}
+#mini-timer{margin-top:auto;border:1px solid var(--linha);border-radius:8px;padding:8px 10px;font-size:13px;text-decoration:none;color:var(--tinta);display:none}
+#mini-timer b{font-family:var(--f-mono);font-size:18px;display:block}
+#status-salvo{font-size:12px;color:var(--tinta2);padding:0 8px;display:none}
+.dia.fora{background:var(--painel2);opacity:.75}
+#principal{overflow-y:auto;padding:26px 28px 60px}
+.vista{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.cab{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.cab p{color:var(--tinta2);max-width:65ch}
+
+.cartao{background:var(--painel);border:1px solid var(--linha);border-radius:var(--raio);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.grade{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:1.2fr 1fr} .g2i{grid-template-columns:1fr 1fr}
+.tile{background:var(--painel);border:1px solid var(--linha);border-radius:var(--raio);padding:12px 14px}
+.tile small{display:block;color:var(--tinta2);font-size:12.5px}
+.tile b{font-family:var(--f-titulo);font-size:30px;font-weight:600;line-height:1.1}
+.tile span{font-size:12.5px;color:var(--tinta2)}
+.rot{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta2);font-weight:600}
+.suave{color:var(--tinta2)} .peq{font-size:13px}
+.linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.entre{justify-content:space-between}
+.col{display:flex;flex-direction:column;gap:8px}
+
+.btn{border:1px solid var(--linha);background:var(--painel);border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:500;font-size:14px}
+.btn:hover{border-color:var(--acento)}
+.btn.pri{background:var(--acento);border-color:var(--acento);color:var(--acento-tinta);font-weight:600}
+.btn.per{color:var(--critico);border-color:var(--critico)}
+.btn.mini{padding:3px 9px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.lig{background:var(--acento-suave);border-color:var(--acento);color:var(--acento)}
+
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:99px;padding:1px 9px;border:1px solid currentColor;white-space:nowrap}
+.t-Direto{color:var(--direto)} .t-Drill{color:var(--drill)} .t-Recuperação{color:var(--recup)} .t-Teoria{color:var(--teoria)} .t-Folga{color:var(--folga)}
+.c-bom{color:var(--bom)} .c-aviso{color:var(--aviso)} .c-critico{color:var(--critico)}
+.alerta{border-radius:var(--raio);padding:11px 14px;border-left:4px solid var(--aviso);background:var(--aviso-fundo);display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.alerta.critico{border-color:var(--critico);background:var(--critico-fundo)}
+.alerta.bom{border-color:var(--bom);background:var(--bom-fundo)}
+
+.barra{height:8px;background:var(--painel2);border-radius:99px;overflow:hidden;border:1px solid var(--linha);position:relative}
+.barra i{display:block;height:100%;background:var(--acento);border-radius:99px}
+.tipo-linha{display:grid;grid-template-columns:104px 1fr 118px;gap:10px;align-items:center;font-size:13.5px}
+.barra.meta{overflow:visible}
+.barra.meta u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tinta)}
+
+/* eixo estaqueado: progresso dos marcos */
+.eixo{overflow-x:auto}
+.eixo svg{display:block;min-width:560px;width:100%;height:74px}
+.eixo text{font-family:var(--f-mono);font-size:10.5px;fill:var(--tinta2)}
+
+.marco{background:var(--painel);border:1px solid var(--linha);border-radius:var(--raio)}
+.marco>header{display:grid;grid-template-columns:46px 1fr auto;gap:12px;align-items:center;padding:12px 16px;cursor:pointer}
+.marco .n{font-family:var(--f-titulo);font-size:26px;font-weight:600;color:var(--acento);border-right:1px solid var(--linha)}
+.marco.feito .n{color:var(--bom)}
+.marco .corpo{padding:4px 16px 18px;display:grid;grid-template-columns:1.25fr 1fr;gap:20px;border-top:1px solid var(--linha)}
+.marco .corpo>div{display:flex;flex-direction:column;gap:14px;padding-top:14px;min-width:0}
+.check{display:flex;gap:9px;align-items:flex-start;padding:3px 0;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--acento);width:15px;height:15px;flex:none}
+.check.ok span{color:var(--tinta2);text-decoration:line-through}
+.bloco{background:var(--painel2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--linha)}
+.bloco.b-Drill{border-color:var(--drill)} .bloco.b-Rec{border-color:var(--recup)} .bloco.b-ok{border-color:var(--bom)}
+textarea,input[type=text],input[type=number],input[type=date],input[type=time],input[type=search],select{background:var(--painel);border:1px solid var(--linha);border-radius:8px;padding:7px 10px;width:100%}
+textarea{min-height:92px;resize:vertical;line-height:1.45}
+label.campo{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--tinta2);font-weight:500}
+label.campo>*{color:var(--tinta);font-weight:400;font-size:14.5px}
+
+.semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.dia{background:var(--painel);border:1px solid var(--linha);border-radius:8px;padding:8px;min-height:120px;display:flex;flex-direction:column;gap:6px}
+.dia.hoje{border-color:var(--acento);box-shadow:inset 0 0 0 1px var(--acento)}
+.dia>small{color:var(--tinta2);font-size:12px;font-weight:600}
+.sessao{border-left:3px solid var(--folga);background:var(--painel2);border-radius:6px;padding:6px 8px;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.sessao.s-Direto{border-color:var(--direto)} .sessao.s-Drill{border-color:var(--drill)} .sessao.s-Recuperação{border-color:var(--recup)} .sessao.s-Teoria{border-color:var(--teoria)}
+.sessao.feita{opacity:.55} .sessao.feita .tt{text-decoration:line-through}
+.sessao.atrasada{outline:1px dashed var(--critico)}
+.lista-s{display:grid;grid-template-columns:96px 104px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--linha);font-size:14px}
+.lista-s:last-child{border-bottom:0}
+
+.relogio{font-family:var(--f-mono);font-size:84px;font-weight:500;text-align:center;line-height:1;font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;border:1px solid var(--linha);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--painel);padding:7px 12px;cursor:pointer;font-size:14px;border-right:1px solid var(--linha)}
+.seg button:last-child{border-right:0}
+.seg button.lig{background:var(--acento);color:var(--acento-tinta);font-weight:600}
+
+.flash{min-height:230px;justify-content:center;text-align:center;gap:16px;padding:28px}
+.flash .q{font-size:20px;font-family:var(--f-titulo);font-weight:600;max-width:46ch;margin:0 auto;line-height:1.25}
+.flash .a{font-size:16px;max-width:60ch;margin:0 auto;padding-top:14px;border-top:1px dashed var(--linha)}
+.notas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;margin:0 auto;width:100%}
+.notas button small{display:block;font-weight:400;font-size:11.5px;opacity:.8}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta2)}
+.rolar{overflow-x:auto}
+.vazio{color:var(--tinta2);text-align:center;padding:22px;border:1px dashed var(--linha);border-radius:var(--raio)}
+
+#modal{position:fixed;inset:0;background:rgba(8,16,18,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+#modal.on{display:flex}
+#modal .cx{background:var(--painel);border-radius:12px;padding:20px;max-width:520px;width:100%;max-height:90%;overflow:auto;display:flex;flex-direction:column;gap:12px;border:1px solid var(--linha)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--tinta);color:var(--fundo);padding:9px 16px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90%}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+
+@media (max-width:900px){
+  .g4{grid-template-columns:repeat(2,1fr)} .g2,.g2i{grid-template-columns:1fr}
+  .marco .corpo{grid-template-columns:1fr}
+  .semana{grid-template-columns:1fr} .dia{min-height:0}
+}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  #lateral{flex-direction:row;align-items:center;padding:8px 12px;border-right:0;border-bottom:1px solid var(--linha);overflow-x:auto;overflow-y:hidden;gap:10px}
+  .marca span{display:none} #status-salvo{white-space:nowrap} .marca b{font-size:17px;white-space:nowrap}
+  nav{flex-direction:row} nav a{white-space:nowrap;padding:6px 10px}
+  #mini-timer{margin:0;white-space:nowrap;padding:4px 8px} #mini-timer b{display:inline;font-size:14px}
+  #principal{padding:16px 16px 60px}
+  .relogio{font-size:60px}
+  .lista-s{grid-template-columns:1fr auto} .lista-s>:nth-child(1),.lista-s>:nth-child(2){grid-column:auto}
+  .tipo-linha{grid-template-columns:92px 1fr} .tipo-linha>:last-child{grid-column:1/-1}
+  .notas{grid-template-columns:repeat(2,1fr)}
+}
+
+.voltar-hub{display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--linha);border-radius:8px;color:var(--tinta);text-decoration:none;font-size:13.5px;font-weight:500}
+.voltar-hub:hover{border-color:var(--acento);color:var(--acento)}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="lateral">
+    <a class="voltar-hub" href="index.html">‹ Gestor de estudos</a>
+    <div class="marca"><b>Ultra-aprendizado</b><span>Revit 2027 · reforma Bom Futuro, 343</span></div>
+    <nav id="nav" aria-label="Seções"></nav>
+    <span id="status-salvo" role="status"></span>
+    <a id="mini-timer" href="#sessao"></a>
+  </aside>
+  <main id="principal"><div class="vista" id="vista"></div></main>
+</div>
+<div id="modal" role="dialog" aria-modal="true"><div class="cx" id="modal-cx"></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="js/armazenamento.js"></script>
+<script src="js/ultra-nucleo.js"></script>
+<script src="dados/revit.js"></script>
+<script>
+/* Os dados do projeto ficam em dados/revit.js (compartilhados com o hub). */
+const CHAVE_STORAGE = ULTRA['revit'].chave;
+const DADOS_INICIAIS = ULTRA['revit'].dados;
+
+/* =====================================================================
+   APP — lógica genérica. Não depende do conteúdo de DADOS_INICIAIS.
+   Seções: utilitários · estado · cálculos · vistas · ações · timer · início
+   ===================================================================== */
+const D = DADOS_INICIAIS;
+const TIPOS = ['Direto', 'Drill', 'Recuperação', 'Teoria'];
+const DIAS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
+const ROTAS = [
+  ['painel', 'Painel'], ['marcos', 'Marcos'], ['cronograma', 'Cronograma'], ['sessao', 'Sessão'],
+  ['flashcards', 'Flashcards'], ['recuperacao', 'Recuperação'], ['erros', 'O que errei'],
+  ['diario', 'Diário'], ['ficha', 'Ficha do projeto'], ['dados', 'Dados'], ['ajustes', 'Configurações']
+];
+
+/* ---------- utilitários ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const deIso = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const hoje = () => iso(new Date());
+const addDias = (s, n) => { const d = deIso(s); d.setDate(d.getDate() + n); return iso(d); };
+const difDias = (a, b) => Math.round((deIso(a) - deIso(b)) / 864e5);
+const dow = s => (deIso(s).getDay() + 6) % 7;                      // 0 = segunda
+const fData = s => DIAS[dow(s)] + ', ' + s.slice(8) + '/' + s.slice(5, 7);
+const fDataLonga = s => s.slice(8) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4);
+const fMin = m => { m = Math.round(m); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + pad(m % 60) : ''); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const marco = id => D.marcos.find(m => m.id === id);
+const rotMarco = id => { const m = marco(id); return m ? 'M' + m.num + ' · ' + m.nome : '—'; };
+const optMarcos = sel => D.marcos.map(m => `<option value="${m.id}"${m.id === sel ? ' selected' : ''}>M${m.num} · ${esc(m.nome)}</option>`).join('');
+const chip = t => `<span class="chip t-${t}">${t}</span>`;
+
+/* ---------- estado e armazenamento ---------- */
+let storageOk = true;
+let S;                                   // estado salvo
+const ui = { abertos: {}, cronoModo: 'semana', cronoSem: null, revelado: false, filtroErro: '', buscaErro: '', filtroCard: '', recall: {}, pre: null, manual: false };
+
+function estadoNovo() { return UltraNucleo.estadoNovo(D); }
+function carregar() {
+  try { S = UltraNucleo.carregar(D, CHAVE_STORAGE); return; } catch (e) { storageOk = false; }
+  S = estadoNovo();
+}
+function migrar() { UltraNucleo.migrar(S); }
+let versao = 0;                          // muda a cada salvamento; invalida o cache das datas
+/* Quando a página é aberta pelo EstudosRevit.exe, o progresso também vai para um arquivo JSON
+   na pasta do programa (o .exe responde em /api/estado). Na página publicada, só o localStorage. */
+const ARQ = { ativo: false, status: '', erro: false, caminho: '', timer: null, pendente: false };
+function salvarArquivo(agora) {
+  if (!ARQ.ativo) return;
+  ARQ.pendente = true; clearTimeout(ARQ.timer);
+  const envia = () => {
+    ARQ.pendente = false;
+    fetch('/api/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(S) })
+      .then(r => { if (!r.ok) throw 0; ARQ.erro = false; ARQ.status = 'Salvo no arquivo às ' + new Date().toTimeString().slice(0, 5); mostrarStatus(); })
+      .catch(() => { ARQ.erro = true; ARQ.status = 'Não salvou no arquivo. Abra o EstudosRevit.exe de novo.'; mostrarStatus(); });
+  };
+  if (agora) envia(); else ARQ.timer = setTimeout(envia, 700);
+}
+function mostrarStatus() { const el = $('#status-salvo'); if (el) { el.textContent = ARQ.status; el.className = 'status-salvo' + (ARQ.erro ? ' c-critico' : ''); el.style.display = ARQ.ativo ? 'block' : 'none'; } }
+function salvar() {
+  versao++;
+  salvarArquivo();
+  if (!storageOk) return;
+  try { Armazenamento.gravar(CHAVE_STORAGE, S); } catch (e) { storageOk = false; render(); }
+}
+
+/* ---------- cálculos ---------- */
+const sessoes = () => D.sessoes.map((s, i) => Object.assign({ id: 's' + i }, s));
+/* ---------- datas das sessões ----------
+   As sessões seguem a ordem do plano e são encaixadas nos seus dias de estudo,
+   respeitando os MINUTOS disponíveis de cada dia (Configurações):
+   · cabe no que sobra do dia? fica no mesmo dia; não cabe? vai para o próximo dia de estudo;
+   · uma sessão maior que um dia inteiro é dividida em partes, em dias seguidos de estudo;
+   · Folga ocupa um dia de estudo inteiro;
+   · sem "Recalcular", tudo parte da data de início; depois dele, o que falta parte de hoje;
+   · sessão reagendada à mão fica presa na data escolhida e esse dia sai da sequência. */
+const est = s => S.sessoes[s.id] || {};
+const presa = s => !!(est(s).fixa && !est(s).feita);
+const temDisponivel = () => Object.values(S.config.disp).some(d => d.ativo && d.min > 0);
+function calcDatas() { return UltraNucleo.calcDatas(D, S); }   // regra em js/ultra-nucleo.js
+let cacheDatas = { v: -1, r: null };
+function calc() { if (cacheDatas.v !== versao) cacheDatas = { v: versao, c: calcDatas() }; return cacheDatas.c; }
+const datas = () => calc().r;
+const partesDe = s => calc().partes[s.id] || [{ d: dataSessao(s), min: s.min || 0 }];
+const dataSessao = s => datas()[s.id];
+const feita = s => !!(S.sessoes[s.id] && S.sessoes[s.id].feita);
+const pendentes = () => sessoes().filter(s => !feita(s)).sort((a, b) => dataSessao(a).localeCompare(dataSessao(b)));
+const atrasadas = () => pendentes().filter(s => dataSessao(s) < hoje());
+const proxima = () => pendentes().find(s => s.tipo !== 'Folga');
+const semanaDe = d => Math.floor(difDias(d, S.config.inicio) / 7) + 1;
+const totalSemanas = () => Math.max(1, ...sessoes().map(s => semanaDe(dataSessao(s))));
+function semanaAtual() { return Math.floor(difDias(hoje(), S.config.inicio) / 7) + 1; }
+
+function progMarco(m) {
+  const feitas = m.tarefas.filter((_, i) => S.tarefas[m.id + '-' + i]).length;
+  return { feitas, total: m.tarefas.length, pct: S.concluido[m.id] ? 100 : Math.round(feitas / m.tarefas.length * 100) };
+}
+function progGeral() {
+  let f = 0, t = 0; D.marcos.forEach(m => { const p = progMarco(m); f += p.feitas; t += p.total; });
+  return Math.round(f / t * 100);
+}
+const marcoAtual = () => D.marcos.find(m => !S.concluido[m.id]) || D.marcos[D.marcos.length - 1];
+
+function minutosPorTipo() {
+  const r = {}; TIPOS.forEach(t => r[t] = 0);
+  S.registros.forEach(x => { r[x.tipo] = (r[x.tipo] || 0) + x.min; });
+  return r;
+}
+function sequencia() {
+  let d = hoje(), n = 0;
+  if (!S.dias[d]) d = addDias(d, -1);
+  while (S.dias[d]) { n++; d = addDias(d, -1); }
+  return n;
+}
+function sugestoesDrill() {
+  const lim = addDias(hoje(), -14);
+  return S.registros.filter(r => r.travei && r.data >= lim && !S.dispensados[r.id]).slice(-6).reverse();
+}
+
+/* flashcards: SM-2 simplificado. nota 0 errei · 1 difícil · 2 bom · 3 fácil */
+function flashDia() { if (S.flashDia.data !== hoje()) S.flashDia = { data: hoje(), n: 0 }; return S.flashDia; }
+function filaFlash() {
+  const h = hoje(), idx = marcoAtual().num;
+  const devidos = S.cards.filter(c => c.due && c.due <= h).sort((a, b) => a.visto - b.visto);
+  const vagas = Math.max(0, S.config.metaFlash - flashDia().n - devidos.length);
+  const novos = S.cards.filter(c => !c.due && (marco(c.marco) ? marco(c.marco).num <= idx : true)).slice(0, vagas);
+  const errados = devidos.filter(c => c.iv === 0 && c.visto);          // os que errei hoje voltam no fim da fila
+  return devidos.filter(c => !(c.iv === 0 && c.visto)).concat(novos, errados);
+}
+function avaliar(c, nota) {
+  let ef = c.ef || 2.5, reps = c.reps || 0, iv = c.iv || 0;
+  if (nota === 0) { reps = 0; iv = 0; ef = Math.max(1.3, ef - 0.2); }
+  else {
+    if (nota === 1) ef = Math.max(1.3, ef - 0.15);
+    if (nota === 3) ef += 0.15;
+    if (reps === 0) iv = nota === 3 ? 3 : 1;
+    else if (reps === 1) iv = nota === 1 ? 2 : nota === 3 ? 7 : 4;
+    else iv = Math.round(iv * (nota === 1 ? 1.2 : nota === 3 ? ef * 1.3 : ef));
+    iv = Math.max(1, iv); reps++;
+  }
+  Object.assign(c, { ef, reps, iv, due: addDias(hoje(), iv), visto: Date.now() });
+  flashDia().n++; S.dias[hoje()] = true;
+}
+const previsao = (c, nota) => { const k = Object.assign({}, c); const fd = S.flashDia.n; avaliar(k, nota); S.flashDia.n = fd; return k.iv === 0 ? 'hoje' : k.iv + ' d'; };
+
+/* recalcular: o que está atrasado (e tudo depois) recomeça a partir de hoje, nos dias disponíveis */
+function recalcular() {
+  if (!temDisponivel()) return -1;
+  const n = atrasadas().length;
+  if (!n) return 0;
+  S.plano.base = hoje();
+  return n;
+}
+/* ---------- vistas ---------- */
+function eixoSvg() {
+  const n = D.marcos.length, w = 1000, x0 = 40, x1 = w - 40, passo = (x1 - x0) / (n - 1);
+  let g = `<line x1="${x0}" y1="30" x2="${x1}" y2="30" stroke="var(--linha)" stroke-width="3"/>`;
+  const feitos = D.marcos.filter(m => S.concluido[m.id]).length;
+  const at = marcoAtual(), pa = S.concluido[at.id] ? 0 : progMarco(at).pct / 100;
+  const xp = x0 + passo * Math.min(n - 1, feitos + (feitos < n - 1 ? pa : 0) - (feitos === 0 ? 0 : 0));
+  g += `<line x1="${x0}" y1="30" x2="${Math.max(x0, x0 + passo * (feitos > 0 ? feitos - 1 : 0) + (feitos > 0 ? passo * pa : 0))}" y2="30" stroke="var(--acento)" stroke-width="3"/>`;
+  D.marcos.forEach((m, i) => {
+    const x = x0 + passo * i, ok = S.concluido[m.id], cur = m.id === at.id && !ok;
+    g += `<line x1="${x}" y1="20" x2="${x}" y2="40" stroke="${ok ? 'var(--bom)' : cur ? 'var(--acento)' : 'var(--folga)'}" stroke-width="2"/>`;
+    g += `<circle cx="${x}" cy="30" r="${cur ? 7 : 5}" fill="${ok ? 'var(--bom)' : cur ? 'var(--acento)' : 'var(--painel)'}" stroke="${ok ? 'var(--bom)' : cur ? 'var(--acento)' : 'var(--folga)'}" stroke-width="2"/>`;
+    g += `<text x="${x}" y="12" text-anchor="middle">Etapa ${i + 1}</text><text x="${x}" y="58" text-anchor="middle" style="fill:var(--tinta)">M${m.num}</text>`;
+    g += `<text x="${x}" y="71" text-anchor="middle">${ok ? 'pronto' : progMarco(m).pct + '%'}</text>`;
+  });
+  return `<div class="eixo"><svg viewBox="0 0 ${w} 76" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Progresso dos marcos">${g}</svg></div>`;
+}
+
+const V = {};
+
+V.painel = () => {
+  const mt = minutosPorTipo(), pratica = mt.Direto + mt.Drill + mt['Recuperação'], sem = semanaAtual(), tot = totalSemanas();
+  const px = proxima(), atr = atrasadas(), fila = filaFlash().length, fd = flashDia(), sug = sugestoesDrill();
+  const semTxt = sem < 1 ? 'Começa ' + fData(S.config.inicio) : sem > tot ? 'Plano encerrado' : sem + ' de ' + tot;
+  let h = `<div class="cab"><div><h1>${esc(D.projeto.nome)}</h1><p>${esc(D.projeto.entregavel)}</p></div></div>`;
+  if (!storageOk) h += `<div class="alerta critico"><span><b>Salvamento automático indisponível neste navegador.</b> O progresso some ao fechar a página. Use a aba Dados para copiar um backup.</span></div>`;
+  if (mt.Teoria > pratica && mt.Teoria > 0) h += `<div class="alerta"><span><b>Regra de ouro:</b> você tem ${fMin(mt.Teoria)} de teoria contra ${fMin(pratica)} de prática. Inverta: abra o Revit e faça.</span></div>`;
+  if (atr.length) h += `<div class="alerta critico"><span><b>${atr.length} ${atr.length > 1 ? 'sessões atrasadas' : 'sessão atrasada'}.</b> Recalcule as datas para redistribuir o que falta.</span><button class="btn" data-a="recalcular">Recalcular datas</button></div>`;
+  h += `<div class="cartao"><div class="linha entre"><span class="rot">Marcos do projeto, do levantamento à prancha</span><span class="peq suave">${D.marcos.filter(m => S.concluido[m.id]).length} de ${D.marcos.length} concluídos</span></div>${eixoSvg()}</div>`;
+  h += `<div class="grade g4">
+    <div class="tile"><small>Progresso geral</small><b class="num">${progGeral()}%</b><div class="barra"><i style="width:${progGeral()}%"></i></div></div>
+    <div class="tile"><small>Semana do cronograma</small><b>${semTxt}</b><br><span>${sem >= 1 && sem <= tot ? 'Foco: ' + esc(rotMarco((sessoes().find(s => semanaDe(dataSessao(s)) === sem && s.tipo !== 'Folga') || px || {}).marco)) : 'Início em ' + fDataLonga(S.config.inicio)}</span></div>
+    <div class="tile"><small>Sequência</small><b class="num">${sequencia()} ${sequencia() === 1 ? 'dia' : 'dias'}</b><br><span>${S.dias[hoje()] ? 'Hoje já conta' : 'Estude hoje para manter'}</span></div>
+    <div class="tile"><small>Flashcards hoje</small><b class="num">${fila}</b> <span>a revisar</span><br><span>${fd.n} de ${S.config.metaFlash} feitos hoje</span></div>
+  </div>`;
+  h += `<div class="grade g2"><div class="cartao"><span class="rot">Próxima sessão sugerida</span>`;
+  if (px) h += `<div class="linha">${chip(px.tipo)}<b>${esc(px.titulo)}</b></div><span class="suave peq">${fData(dataSessao(px))} às ${S.config.disp[dow(dataSessao(px))].hora} · ${fMin(px.min)} · ${esc(rotMarco(px.marco))}</span>
+    <div class="linha"><button class="btn pri" data-a="iniciarSessao" data-id="${px.id}">Iniciar esta sessão</button><a class="btn" href="#cronograma" style="text-decoration:none">Ver cronograma</a></div>`;
+  else h += `<p class="suave">Todas as sessões planejadas foram feitas.</p>`;
+  h += `</div><div class="cartao"><span class="rot">Tempo por tipo × meta 60/20/20</span>`;
+  ['Direto', 'Drill', 'Recuperação'].forEach(t => {
+    const p = pratica ? Math.round(mt[t] / pratica * 100) : 0, meta = D.projeto.meta[t];
+    h += `<div class="tipo-linha"><span class="chip t-${t}">${t}</span><div class="barra meta"><i style="width:${p}%;background:var(--${t === 'Direto' ? 'direto' : t === 'Drill' ? 'drill' : 'recup'})"></i><u style="left:${meta}%"></u></div><span class="num peq">${fMin(mt[t])} · ${p}% <span class="suave">/ ${meta}%</span></span></div>`;
+  });
+  h += `<div class="tipo-linha"><span class="chip t-Teoria">Teoria</span><span class="peq suave">Aulas e leitura, fora da meta</span><span class="num peq">${fMin(mt.Teoria)}</span></div>
+    <span class="peq suave">O traço marca a meta de cada tipo. Total registrado: ${fMin(pratica + mt.Teoria)}.</span></div></div>`;
+  h += `<div class="grade g2i"><div class="cartao"><span class="rot">Progresso por marco</span>`;
+  D.marcos.forEach(m => { const p = progMarco(m); h += `<div class="tipo-linha" style="grid-template-columns:1fr 110px 74px"><a href="#marcos" data-a="abrirMarco" data-id="${m.id}" style="text-decoration:none;color:var(--tinta)">M${m.num} · ${esc(m.nome)}</a><div class="barra"><i style="width:${p.pct}%${S.concluido[m.id] ? ';background:var(--bom)' : ''}"></i></div><span class="num peq">${S.concluido[m.id] ? '<span class="c-bom">pronto</span>' : p.feitas + '/' + p.total}</span></div>`; });
+  h += `</div><div class="cartao"><span class="rot">Onde travei: drills sugeridos</span>`;
+  if (sug.length) sug.forEach(r => { h += `<div class="bloco b-Drill"><div class="linha entre"><span><b>${esc(r.travei)}</b><br><span class="peq suave">${fData(r.data)} · ${esc(rotMarco(r.marco))}</span></span><span class="linha"><button class="btn mini" data-a="drillDe" data-id="${r.id}">Treinar</button><button class="btn mini" data-a="dispensar" data-id="${r.id}">Dispensar</button></span></div></div>`; });
+  else h += `<p class="suave">Ao fechar uma sessão, anote onde travou. Os travamentos dos últimos 14 dias aparecem aqui como sugestão de drill.</p>`;
+  h += `</div></div>`;
+  return h;
+};
+
+V.marcos = () => {
+  let h = `<div class="cab"><div><h1>Marcos</h1><p>Cada marco fecha quando o critério de pronto é atendido e a explicação Feynman está escrita.</p></div></div>`;
+  D.marcos.forEach(m => {
+    const p = progMarco(m), ab = ui.abertos[m.id], ok = S.concluido[m.id], fy = (S.feynman[m.id] || {}).texto || '';
+    h += `<section class="marco${ok ? ' feito' : ''}"><header data-a="alternar" data-id="${m.id}" role="button" tabindex="0" aria-expanded="${!!ab}">
+      <span class="n">M${m.num}</span><span><h3>${esc(m.nome)}${m.drillPrincipal ? ' <span class="chip t-Drill">drill principal</span>' : ''}</h3><span class="peq suave">${esc(m.objetivo)}</span></span>
+      <span class="linha">${ok ? '<span class="chip c-bom">concluído</span>' : `<span class="num peq">${p.feitas}/${p.total}</span>`}<span aria-hidden="true">${ab ? '▾' : '▸'}</span></span></header>`;
+    if (ab) {
+      h += `<div class="corpo"><div><div><span class="rot">Direto: tarefas</span>` +
+        m.tarefas.map((t, i) => { const k = m.id + '-' + i, on = S.tarefas[k]; return `<label class="check${on ? ' ok' : ''}"><input type="checkbox" id="t-${k}" data-c="tarefa" data-id="${k}"${on ? ' checked' : ''}><span>${esc(t)}</span></label>`; }).join('') + `</div>`;
+      if (m.aulas.length) h += `<div><span class="rot">Material vinculado (só o que o marco pede)</span>` + m.aulas.map(a => { const au = D.aulas.find(x => x.id === a), on = S.aulas[a]; return `<label class="check${on ? ' ok' : ''}"><input type="checkbox" id="au-${m.id}-${a}" data-c="aula" data-id="${a}"${on ? ' checked' : ''}><span>${esc(au.nome)}</span></label>`; }).join('') + `</div>`;
+      h += `<div class="bloco b-ok"><span class="rot">Critério de pronto</span><p>${esc(m.pronto)}</p></div></div>
+        <div><div class="bloco b-Drill"><span class="rot">Drill</span><p>${esc(m.drill)}</p></div>
+        <div class="bloco b-Rec"><span class="rot">Desafio de recuperação</span><p>${esc(m.recuperacao)}</p></div>
+        <div class="bloco"><span class="rot">Feedback</span><p>${esc(m.feedback)}</p></div>
+        <label class="campo" for="fy-${m.id}">Explicação Feynman: ${esc(m.feynman)}
+          <textarea id="fy-${m.id}" data-i="feynman" data-id="${m.id}" placeholder="Explique com as suas palavras, sem consultar nada.">${esc(fy)}</textarea></label>
+        <div class="linha entre"><span class="peq suave" id="fyc-${m.id}">${fy.trim().length} caracteres (mínimo 40)</span>
+        ${ok ? `<button class="btn" data-a="reabrir" data-id="${m.id}">Reabrir marco</button>` : `<button class="btn pri" id="fyb-${m.id}" data-a="concluir" data-id="${m.id}"${fy.trim().length < 40 ? ' disabled' : ''}>Concluir marco</button>`}</div>
+        </div></div>`;
+    }
+    h += `</section>`;
+  });
+  h += `<div class="cartao"><span class="rot">O que fica para depois deste projeto</span><p class="suave">${D.aulasDepois.map(esc).join(' · ')}</p></div>`;
+  return h;
+};
+
+function cartaoSessao(s, compacto, dia) {
+  const d = dataSessao(s), f = feita(s), atr = !f && d < hoje(), ps = partesDe(s), i = dia ? ps.findIndex(p => p.d === dia) : -1;
+  const dur = ps.length > 1 && i >= 0 ? fMin(ps[i].min) + ' · parte ' + (i + 1) + ' de ' + ps.length : (s.min ? fMin(s.min) : '');
+  return `<div class="sessao s-${s.tipo}${f ? ' feita' : ''}${atr ? ' atrasada' : ''}"><div class="linha entre">${chip(s.tipo)}<span class="suave num">${dur}</span></div>
+    <span class="tt">${esc(s.titulo)}</span><span class="suave">${compacto ? '' : fData(d) + ' · '}M${marco(s.marco).num}${atr ? ' · <span class="c-critico">atrasada</span>' : ''}</span>
+    <div class="linha"><button class="btn mini${f ? ' lig' : ''}" data-a="feita" data-id="${s.id}">${f ? 'Feita ✓' : 'Marcar feita'}</button>${f ? '' : `<button class="btn mini" data-a="reagendar" data-id="${s.id}">Reagendar</button>${s.tipo !== 'Folga' ? `<button class="btn mini" data-a="iniciarSessao" data-id="${s.id}">Iniciar</button>` : ''}`}</div></div>`;
+}
+V.cronograma = () => {
+  const tot = totalSemanas(), todas = sessoes();
+  if (ui.cronoSem == null) ui.cronoSem = Math.min(Math.max(semanaAtual(), 1), tot);
+  const atr = atrasadas(), temOver = (S.plano && S.plano.base) || Object.values(S.sessoes).some(x => x.fixa);
+  const diasTxt = DIAS.map((d, i) => S.config.disp[i].ativo && S.config.disp[i].min > 0 ? d + ' ' + fMin(S.config.disp[i].min) : '').filter(Boolean).join(', ');
+  let h = `<div class="cab"><div><h1>Cronograma</h1><p>${tot} semanas a partir de ${fDataLonga(S.config.inicio)}. As sessões seguem a ordem do plano e são encaixadas nos seus dias de estudo${diasTxt ? ' (' + diasTxt + ')' : ''}, respeitando os minutos de cada dia. Para mudar dias, horários ou minutos, vá em <a href="#ajustes">Configurações</a>.</p></div>
+    <div class="linha"><div class="seg"><button data-a="cronoModo" data-id="semana" class="${ui.cronoModo === 'semana' ? 'lig' : ''}">Semana</button><button data-a="cronoModo" data-id="lista" class="${ui.cronoModo === 'lista' ? 'lig' : ''}">Lista</button></div>
+    <button class="btn" data-a="recalcular">Recalcular datas</button>${temOver ? '<button class="btn" data-a="restaurarDatas">Voltar ao plano original</button>' : ''}</div></div>`;
+  if (!temDisponivel()) h += `<div class="alerta"><span><b>Nenhum dia de estudo marcado.</b> Marque seus dias em Configurações para o cronograma se ajustar.</span><a class="btn" href="#ajustes" style="text-decoration:none">Abrir Configurações</a></div>`;
+  if (atr.length) h += `<div class="alerta critico"><span><b>${atr.length} ${atr.length > 1 ? 'sessões atrasadas' : 'sessão atrasada'}.</b> Recalcular faz o que falta recomeçar a partir de hoje, nos seus dias de estudo, na mesma ordem.</span></div>`;
+  if (ui.cronoModo === 'semana') {
+    const ini = addDias(S.config.inicio, (ui.cronoSem - 1) * 7);
+    h += `<div class="linha entre"><button class="btn" data-a="semAnt"${ui.cronoSem <= 1 ? ' disabled' : ''}>‹ Anterior</button><b>Semana ${ui.cronoSem} · ${fDataLonga(ini)} a ${fDataLonga(addDias(ini, 6))}</b><button class="btn" data-a="semProx"${ui.cronoSem >= tot + 4 ? ' disabled' : ''}>Próxima ›</button></div><div class="semana">`;
+    for (let i = 0; i < 7; i++) {
+      const d = addDias(ini, i), it = todas.filter(s => partesDe(s).some(p => p.d === d)), disp = S.config.disp[dow(d)];
+      const carga = it.reduce((a, s) => a + partesDe(s).filter(p => p.d === d).reduce((x, p) => x + p.min, 0), 0), excede = disp.ativo && carga > disp.min;
+      const uso = disp.ativo && disp.min > 0 ? ` <span class="${excede ? 'c-aviso' : 'suave'}" title="Planejado ${fMin(carga)}; disponível ${fMin(disp.min)}">· ${fMin(carga)} de ${fMin(disp.min)}</span>` : '';
+      h += `<div class="dia${d === hoje() ? ' hoje' : ''}${disp.ativo ? '' : ' fora'}"><small>${fData(d)}${disp.ativo ? ' · ' + disp.hora : ''}${uso}</small>${it.map(s => cartaoSessao(s, true, d)).join('') || `<span class="peq suave">${disp.ativo ? 'Livre' : '—'}</span>`}</div>`;
+    }
+    h += `</div>`;
+  } else {
+    const porSem = {}; todas.sort((a, b) => dataSessao(a).localeCompare(dataSessao(b))).forEach(s => { const k = semanaDe(dataSessao(s)); (porSem[k] = porSem[k] || []).push(s); });
+    Object.keys(porSem).map(Number).sort((a, b) => a - b).forEach(k => {
+      h += `<div class="cartao"><span class="rot">Semana ${k} · a partir de ${fDataLonga(addDias(S.config.inicio, (k - 1) * 7))}</span><div>` + porSem[k].map(s => {
+        const f = feita(s), atr2 = !f && dataSessao(s) < hoje();
+        return `<div class="lista-s"><span class="num${atr2 ? ' c-critico' : ''}">${fData(dataSessao(s))}</span><span>${chip(s.tipo)}</span><span style="${f ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(s.titulo)} <span class="suave peq">· M${marco(s.marco).num}${s.min ? ' · ' + fMin(s.min) : ''}${partesDe(s).length > 1 ? ' · em ' + partesDe(s).length + ' partes: ' + partesDe(s).map(p => fData(p.d) + ' (' + fMin(p.min) + ')').join(', ') : ''}</span></span>
+          <span class="linha"><button class="btn mini${f ? ' lig' : ''}" data-a="feita" data-id="${s.id}">${f ? 'Feita ✓' : 'Marcar feita'}</button>${f ? '' : `<button class="btn mini" data-a="reagendar" data-id="${s.id}">Reagendar</button>`}</span></div>`;
+      }).join('') + `</div></div>`;
+    });
+  }
+  return h;
+};
+
+const fRelogio = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
+const restante = t => t.rodando ? t.fim - Date.now() : t.rest;
+V.sessao = () => {
+  const t = S.timer;
+  let h = `<div class="cab"><div><h1>Sessão de estudo</h1><p>Escolha o marco e o tipo, rode o timer e feche registrando o que fez e onde travou.</p></div></div>`;
+  if (t && t.fase === 'registro') {
+    h += `<div class="cartao"><h2>Fechar a sessão</h2><div class="linha">${chip(t.tipo)}<span>${esc(rotMarco(t.marco))}</span></div>
+      <div class="grade g2i"><label class="campo" for="r-min">Minutos estudados<input type="number" id="r-min" min="1" max="600" value="${Math.max(1, Math.round(t.dec / 60000))}"></label><span></span></div>
+      <label class="campo" for="r-fiz">O que fiz (1 linha)<input type="text" id="r-fiz" maxlength="200" placeholder="Ex.: criei os tipos de parede e redesenhei o perímetro"></label>
+      <label class="campo" for="r-travei">Onde travei (vira sugestão de drill)<input type="text" id="r-travei" maxlength="200" placeholder="Ex.: não achei onde mudar o filtro de fases da vista"></label>
+      ${t.sessaoId ? `<label class="check"><input type="checkbox" id="r-feita" checked><span>Marcar a sessão planejada como feita</span></label>` : ''}
+      <div class="linha"><button class="btn pri" data-a="registrar">Salvar registro</button><button class="btn per" data-a="descartarTimer">Descartar</button></div></div>`;
+  } else if (t) {
+    h += `<div class="cartao" style="align-items:center;gap:16px;padding:30px"><div class="linha">${chip(t.tipo)}<span>${esc(rotMarco(t.marco))}</span></div>
+      <div class="relogio" id="relogio">${fRelogio(restante(t))}</div><span class="suave">${t.rodando ? 'Em andamento' : 'Pausado'} · bloco de ${t.dur} min</span>
+      <div class="linha"><button class="btn pri" data-a="${t.rodando ? 'pausar' : 'retomar'}">${t.rodando ? 'Pausar' : 'Retomar'}</button><button class="btn" data-a="encerrar">Encerrar e registrar</button><button class="btn per" data-a="descartarTimer">Descartar</button></div></div>`;
+  } else {
+    const pre = ui.pre || {}, ps = pre.sessaoId ? sessoes().find(s => s.id === pre.sessaoId) : null, mSel = pre.marco || marcoAtual().id, tSel = pre.tipo || 'Direto';
+    h += `<div class="cartao"><h2>Nova sessão</h2>${ps ? `<div class="bloco"><span class="rot">Sessão planejada</span><p>${esc(ps.titulo)} <span class="suave">· ${fData(dataSessao(ps))}</span> <button class="btn mini" data-a="limparPre">Desvincular</button></p></div>` : ''}${pre.nota ? `<div class="bloco b-Drill"><span class="rot">Drill sugerido</span><p>${esc(pre.nota)}</p></div>` : ''}
+      <div class="grade g2i"><label class="campo" for="s-marco">Marco<select id="s-marco">${optMarcos(mSel)}</select></label>
+      <div class="campo" style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--tinta2);font-weight:500">Tipo<div class="seg" id="s-tipo">${TIPOS.map(x => `<button type="button" data-a="tipoSel" data-id="${x}" class="${x === tSel ? 'lig' : ''}">${x === 'Teoria' ? 'Teoria/aula' : x}</button>`).join('')}</div></div></div>
+      <div class="grade g2i"><label class="campo" for="s-dur">Duração do bloco (min)<input type="number" id="s-dur" min="1" max="240" value="${S.config.pomodoro}"></label>
+      <div class="linha" style="align-items:flex-end"><button class="btn" data-a="durSel" data-id="25">25</button><button class="btn" data-a="durSel" data-id="50">50</button><button class="btn" data-a="durSel" data-id="90">90</button></div></div>
+      <div class="linha"><button class="btn pri" data-a="iniciarTimer">Iniciar timer</button><button class="btn" data-a="manual">Registrar sem timer</button></div></div>`;
+  }
+  const ult = S.registros.slice(-12).reverse();
+  h += `<div class="cartao"><span class="rot">Últimos registros</span>`;
+  h += ult.length ? `<div class="rolar"><table><thead><tr><th>Data</th><th>Tipo</th><th>Marco</th><th>Tempo</th><th>O que fiz</th><th>Onde travei</th><th></th></tr></thead><tbody>` + ult.map(r => `<tr><td class="num">${fData(r.data)}</td><td>${chip(r.tipo)}</td><td>M${marco(r.marco) ? marco(r.marco).num : '?'}</td><td class="num">${fMin(r.min)}</td><td>${esc(r.fiz)}</td><td>${esc(r.travei)}</td><td><button class="btn mini" data-a="apagarReg" data-id="${r.id}" aria-label="Apagar registro">×</button></td></tr>`).join('') + `</tbody></table></div>` : `<p class="suave">Nenhuma sessão registrada ainda.</p>`;
+  h += `</div>`;
+  return h;
+};
+
+V.flashcards = () => {
+  const fila = filaFlash(), c = fila[0], fd = flashDia();
+  let h = `<div class="cab"><div><h1>Flashcards</h1><p>Repetição espaçada, cerca de 10 min por dia. Cards novos entram conforme o marco em que você está.</p></div><button class="btn" data-a="novoCard">Novo card</button></div>`;
+  if (c) {
+    h += `<div class="linha entre"><span class="suave">${fila.length} na fila · ${fd.n} de ${S.config.metaFlash} feitos hoje</span><span class="chip">${esc(rotMarco(c.marco))}${c.due ? '' : ' · novo'}</span></div>
+      <div class="cartao flash"><p class="q">${esc(c.q)}</p>`;
+    if (ui.revelado) h += `<p class="a">${esc(c.a)}</p><div class="notas">${[['Errei', 'c-critico'], ['Difícil', 'c-aviso'], ['Bom', ''], ['Fácil', 'c-bom']].map((x, i) => `<button class="btn ${x[1]}" data-a="nota" data-id="${i}">${x[0]}<small>${previsao(c, i)}</small></button>`).join('')}</div>`;
+    else h += `<div><button class="btn pri" data-a="revelar">Mostrar resposta</button></div><span class="peq suave">Responda em voz alta ou de cabeça antes de revelar.</span>`;
+    h += `</div>`;
+  } else h += `<div class="alerta bom"><span><b>Fila de hoje zerada.</b> ${fd.n ? fd.n + ' revisões feitas hoje.' : 'Nenhum card vence hoje.'}</span></div>`;
+  const lista = S.cards.filter(x => !ui.filtroCard || x.marco === ui.filtroCard);
+  h += `<div class="cartao"><div class="linha entre"><span class="rot">Todos os cards (${lista.length})</span><select id="f-card" data-c="filtroCard" style="width:auto"><option value="">Todos os marcos</option>${optMarcos(ui.filtroCard)}</select></div>
+    <div class="rolar"><table><thead><tr><th>Marco</th><th>Pergunta</th><th>Resposta</th><th>Próxima</th><th></th></tr></thead><tbody>` +
+    lista.map(x => `<tr><td>M${marco(x.marco) ? marco(x.marco).num : '?'}</td><td>${esc(x.q)}</td><td class="suave">${esc(x.a)}</td><td class="num peq">${x.due ? (x.due <= hoje() ? 'hoje' : fData(x.due)) : 'novo'}</td><td><span class="linha" style="flex-wrap:nowrap"><button class="btn mini" data-a="editarCard" data-id="${x.id}">Editar</button><button class="btn mini" data-a="apagarCard" data-id="${x.id}" aria-label="Apagar card">×</button></span></td></tr>`).join('') + `</tbody></table></div></div>`;
+  return h;
+};
+
+const RES = { ok: ['Consegui', 'c-bom'], parcial: ['Parcial', 'c-aviso'], nao: ['Não consegui', 'c-critico'] };
+V.recuperacao = () => {
+  let h = `<div class="cab"><div><h1>Recuperação ativa</h1><p>Tente primeiro, sem consultar. Só depois revele a resposta e avalie com honestidade.</p></div></div>`;
+  D.marcos.forEach(m => {
+    const hist = S.recup[m.id + '-d'] || [], ult = hist[hist.length - 1];
+    h += `<div class="cartao"><div class="linha entre"><h3>M${m.num} · ${esc(m.nome)}</h3>${ult ? `<span class="chip ${RES[ult.res][1]}">${RES[ult.res][0]} · ${fData(ult.data)}</span>` : ''}</div>
+      <div class="bloco b-Rec"><span class="rot">Refaça sem consultar</span><p>${esc(m.recuperacao)}</p>
+      <div class="linha" style="margin-top:8px"><span class="peq suave">Registrar tentativa${hist.length ? ' (' + hist.length + ' até agora)' : ''}:</span>${Object.keys(RES).map(k => `<button class="btn mini ${RES[k][1]}" data-a="tentativa" data-id="${m.id}" data-r="${k}">${RES[k][0]}</button>`).join('')}</div></div>`;
+    m.recall.forEach((r, i) => {
+      const k = m.id + '-q' + i, av = S.recup[k], ab = ui.recall[k];
+      h += `<div class="col" style="border-top:1px solid var(--linha);padding-top:10px"><div class="linha entre"><b>${esc(r.q)}</b>${av ? `<span class="chip ${RES[av.res][1]}">${av.res === 'ok' ? 'Acertei' : av.res === 'parcial' ? 'Parcial' : 'Errei'}</span>` : ''}</div>`;
+      if (ab) h += `<p>${esc(r.a)}</p><div class="linha"><span class="peq suave">Como foi?</span><button class="btn mini c-bom" data-a="recall" data-id="${k}" data-r="ok">Acertei</button><button class="btn mini c-aviso" data-a="recall" data-id="${k}" data-r="parcial">Parcial</button><button class="btn mini c-critico" data-a="recall" data-id="${k}" data-r="nao">Errei</button><button class="btn mini" data-a="recallCard" data-m="${m.id}" data-i="${i}">Virar flashcard</button></div>`;
+      else h += `<div><button class="btn mini" data-a="recallAbrir" data-id="${k}">Já tentei, revelar resposta</button></div>`;
+      h += `</div>`;
+    });
+    h += `</div>`;
+  });
+  return h;
+};
+
+V.erros = () => {
+  const b = ui.buscaErro.toLowerCase();
+  const lista = S.erros.filter(e => (!ui.filtroErro || e.marco === ui.filtroErro) && (!b || (e.erro + ' ' + e.causa + ' ' + e.correcao).toLowerCase().includes(b))).slice().reverse();
+  let h = `<div class="cab"><div><h1>O que errei</h1><p>Cada erro com a causa e a correção. Um clique transforma o erro em flashcard.</p></div><button class="btn pri" data-a="novoErro">Registrar erro</button></div>
+    <div class="grade g2i"><label class="campo" for="e-busca">Buscar<input type="search" id="e-busca" data-i="buscaErro" value="${esc(ui.buscaErro)}" placeholder="Palavra do erro, da causa ou da correção"></label>
+    <label class="campo" for="e-filtro">Marco<select id="e-filtro" data-c="filtroErro"><option value="">Todos os marcos</option>${optMarcos(ui.filtroErro)}</select></label></div><div id="lista-erros">`;
+  h += lista.length ? lista.map(e => `<div class="cartao" style="margin-bottom:10px"><div class="linha entre"><span><span class="chip">${esc(rotMarco(e.marco))}</span> <span class="peq suave">${fDataLonga(e.data)}</span></span><span class="linha"><button class="btn mini" data-a="erroCard" data-id="${e.id}">${e.card ? 'Flashcard criado ✓' : 'Virar flashcard'}</button><button class="btn mini" data-a="apagarErro" data-id="${e.id}" aria-label="Apagar erro">×</button></span></div>
+      <p><b>Erro:</b> ${esc(e.erro)}</p><p><b>Causa:</b> ${esc(e.causa)}</p><p><b>Correção:</b> ${esc(e.correcao)}</p></div>`).join('') : `<div class="vazio">${S.erros.length ? 'Nenhum erro com esse filtro.' : 'Nenhum erro registrado ainda. Registre o primeiro assim que algo der errado no Revit.'}</div>`;
+  return h + `</div>`;
+};
+
+V.diario = () => {
+  let h = `<div class="cab"><div><h1>Diário de consolidação</h1><p>As explicações Feynman de todos os marcos. Edite aqui ou no próprio marco.</p></div></div>`;
+  D.marcos.forEach(m => {
+    const f = S.feynman[m.id] || {};
+    h += `<div class="cartao"><div class="linha entre"><h3>M${m.num} · ${esc(m.nome)}</h3>${f.data ? `<span class="peq suave">Atualizado em ${fDataLonga(f.data)}</span>` : '<span class="chip">pendente</span>'}</div>
+      <label class="campo" for="dy-${m.id}">${esc(m.feynman)}<textarea id="dy-${m.id}" data-i="feynman" data-id="${m.id}" placeholder="Explique com as suas palavras, sem consultar nada.">${esc(f.texto || '')}</textarea></label></div>`;
+  });
+  return h;
+};
+
+V.ficha = () => `<div class="cab"><div><h1>Ficha do projeto</h1><p>Dados do imóvel, padrões do modelo e comandos para consultar enquanto modela.</p></div></div><div class="grade g2i">` +
+  D.ficha.map(f => `<div class="cartao"><span class="rot">${esc(f.titulo)}</span><table><tbody>${f.linhas.map(l => `<tr><td class="suave" style="width:42%">${esc(l[0])}</td><td class="${/^[A-Z_0-9+. ]+$/.test(l[1]) ? 'mono' : ''}">${esc(l[1])}</td></tr>`).join('')}</tbody></table></div>`).join('') + `</div>`;
+
+V.dados = () => `<div class="cab"><div><h1>Dados</h1><p>${ARQ.ativo ? 'Aberto pelo programa: tudo é salvo automaticamente num arquivo no seu computador.' : 'Tudo é salvo automaticamente neste navegador.'} Faça backup para levar o progresso a outro computador ou celular.</p></div></div>
+  ${ARQ.ativo ? `<div class="alerta bom"><span><b>Arquivo de progresso:</b> <span class="mono">${esc(ARQ.caminho)}</span><br><span class="peq">Uma cópia de segurança por dia fica na pasta <span class="mono">backups</span>, ao lado.</span></span></div>` : ''}
+  ${storageOk ? '' : '<div class="alerta critico"><span><b>O salvamento automático não está disponível.</b> Copie o backup antes de fechar a página.</span></div>'}
+  <div class="grade g2i"><div class="cartao"><h3>Exportar backup</h3><p class="suave peq">Gera um JSON com todo o progresso. Se o download não começar, use Copiar.</p>
+  <div class="linha"><button class="btn pri" data-a="exportar">Baixar arquivo JSON</button><button class="btn" data-a="copiarBackup">Copiar JSON</button></div>
+  <textarea id="bk-out" readonly aria-label="Backup em JSON" style="font-family:var(--f-mono);font-size:12px;min-height:120px">${esc(JSON.stringify(S))}</textarea></div>
+  <div class="cartao"><h3>Importar backup</h3><p class="suave peq">Substitui o progresso atual pelo do arquivo.</p>
+  <label class="campo" for="bk-file">Arquivo JSON<input type="file" id="bk-file" accept=".json,application/json" data-c="importarArquivo"></label>
+  <label class="campo" for="bk-in">Ou cole o JSON<textarea id="bk-in" style="font-family:var(--f-mono);font-size:12px;min-height:80px"></textarea></label>
+  <div><button class="btn" data-a="importarTexto">Importar o texto colado</button></div></div></div>
+  <div class="cartao"><h3>Resetar o progresso</h3><p class="suave peq">Apaga tarefas, registros, flashcards criados, erros e explicações. Os dados do plano voltam ao estado inicial.</p><div><button class="btn per" data-a="resetar">Resetar tudo</button></div></div>`;
+
+V.ajustes = () => {
+  const c = S.config;
+  return `<div class="cab"><div><h1>Configurações</h1><p>As mudanças valem na hora e ficam salvas.</p></div></div>
+  <div class="grade g2i"><div class="cartao"><h3>Plano</h3>
+    <label class="campo" for="c-inicio">Data de início do cronograma<input type="date" id="c-inicio" data-c="cfg" data-id="inicio" value="${c.inicio}"></label>
+    <label class="campo" for="c-pomo">Duração padrão do Pomodoro (min)<input type="number" id="c-pomo" min="5" max="180" data-c="cfg" data-id="pomodoro" value="${c.pomodoro}"></label>
+    <label class="campo" for="c-meta">Meta diária de flashcards<input type="number" id="c-meta" min="1" max="100" data-c="cfg" data-id="metaFlash" value="${c.metaFlash}"></label>
+    <div class="campo" style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--tinta2);font-weight:500">Tema<div class="seg">${[['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Escuro']].map(x => `<button data-a="tema" data-id="${x[0]}" class="${c.tema === x[0] ? 'lig' : ''}">${x[1]}</button>`).join('')}</div></div></div>
+  <div class="cartao"><h3>Disponibilidade semanal</h3><p class="suave peq">O cronograma se ajusta na hora: as sessões, na ordem do plano, ocupam os dias marcados até completar os minutos de cada dia. Uma sessão maior que o dia é dividida em partes. Um dia com 0 minutos não recebe sessões.</p>
+    <div class="rolar"><table><thead><tr><th>Dia</th><th>Estudo</th><th>Início</th><th>Minutos</th></tr></thead><tbody>${DIAS.map((d, i) => `<tr><td>${d}</td><td><input type="checkbox" id="d-a${i}" aria-label="Estudo em ${d}" data-c="disp" data-id="${i}" data-k="ativo"${c.disp[i].ativo ? ' checked' : ''} style="width:16px;height:16px;accent-color:var(--acento)"></td>
+      <td><input type="time" id="d-h${i}" aria-label="Início em ${d}" data-c="disp" data-id="${i}" data-k="hora" value="${c.disp[i].hora}"></td><td><input type="number" id="d-m${i}" aria-label="Minutos em ${d}" min="0" max="600" data-c="disp" data-id="${i}" data-k="min" value="${c.disp[i].min}"></td></tr>`).join('')}</tbody></table></div></div></div>`;
+};
+
+/* ---------- render e navegação ---------- */
+function rota() { const r = location.hash.replace('#', ''); return V[r] ? r : 'painel'; }
+function render() {
+  const r = rota(), fila = filaFlash().length, atr = atrasadas().length;
+  $('#nav').innerHTML = ROTAS.map(x => `<a href="#${x[0]}" class="${x[0] === r ? 'ativo' : ''}"${x[0] === r ? ' aria-current="page"' : ''}>${x[1]}${x[0] === 'flashcards' && fila ? `<span class="cont">${fila}</span>` : ''}${x[0] === 'cronograma' && atr ? `<span class="cont" style="background:var(--critico);color:#fff">${atr}</span>` : ''}</a>`).join('');
+  $('#vista').innerHTML = V[r]();
+  tick();
+}
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); }
+function modal(html) { $('#modal-cx').innerHTML = html; $('#modal').classList.add('on'); const f = $('#modal-cx input,#modal-cx textarea,#modal-cx select,#modal-cx button'); if (f) f.focus(); }
+function fecharModal() { $('#modal').classList.remove('on'); }
+function confirmar(titulo, texto, rotulo, fn) { ui.confirma = fn; modal(`<h2>${esc(titulo)}</h2><p>${esc(texto)}</p><div class="linha"><button class="btn per" data-a="confirmaSim">${esc(rotulo)}</button><button class="btn" data-a="fecharModal">Cancelar</button></div>`); }
+function aplicarTema() { const t = S.config.tema, r = document.documentElement; if (t === 'auto') { if (ui.temaPosto) r.removeAttribute('data-theme'); } else { r.setAttribute('data-theme', t); ui.temaPosto = true; } }
+function ir(r) { if (rota() === r) render(); else location.hash = r; }
+
+/* ---------- timer ---------- */
+function bip() { try { const a = new (window.AudioContext || window.webkitAudioContext)(); [0, .35, .7].forEach(d => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.15, a.currentTime + d); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + d + .28); o.start(a.currentTime + d); o.stop(a.currentTime + d + .3); }); } catch (e) { } }
+function tick() {
+  const t = S.timer, mini = $('#mini-timer');
+  if (!t) { mini.style.display = 'none'; document.title = 'Ultra-aprendizado Revit'; return; }
+  if (t.fase === 'andamento' && t.rodando && t.fim - Date.now() <= 0) {
+    t.fase = 'registro'; t.rodando = false; t.dec = t.dur * 60000; salvar(); bip(); toast('Bloco concluído. Registre a sessão.');
+    if (rota() === 'sessao') render(); else ir('sessao'); return;
+  }
+  const txt = t.fase === 'registro' ? 'Registrar' : fRelogio(restante(t));
+  mini.style.display = 'block'; mini.innerHTML = `<span>${t.fase === 'registro' ? 'Sessão terminou' : t.rodando ? t.tipo : 'Pausado'}</span> <b>${txt}</b>`;
+  const el = $('#relogio'); if (el && t.fase === 'andamento') el.textContent = txt;
+  document.title = (t.fase === 'registro' ? 'Registrar sessão' : txt) + ' · Revit';
+}
+
+/* ---------- ações (cliques) ---------- */
+const A = {
+  alternar(el) { ui.abertos[el.dataset.id] = !ui.abertos[el.dataset.id]; render(); },
+  abrirMarco(el) { ui.abertos[el.dataset.id] = true; },
+  concluir(el) { const id = el.dataset.id; if (((S.feynman[id] || {}).texto || '').trim().length < 40) return toast('Escreva a explicação Feynman antes de concluir.'); S.concluido[id] = hoje(); salvar(); render(); toast('Marco concluído.'); },
+  reabrir(el) { delete S.concluido[el.dataset.id]; salvar(); render(); },
+  cronoModo(el) { ui.cronoModo = el.dataset.id; render(); },
+  semAnt() { ui.cronoSem--; render(); }, semProx() { ui.cronoSem++; render(); },
+  feita(el) { const id = el.dataset.id, s = sessoes().find(z => z.id === id), x = S.sessoes[id] || {}; x.feita = !x.feita; if (x.feita) x.dataFeita = dataSessao(s) <= hoje() ? dataSessao(s) : hoje(); else delete x.dataFeita; S.sessoes[id] = x; salvar(); render(); },
+  reagendar(el) { const s = sessoes().find(x => x.id === el.dataset.id); modal(`<h2>Reagendar sessão</h2><p>${esc(s.titulo)}</p><label class="campo" for="rg-data">Nova data<input type="date" id="rg-data" value="${dataSessao(s)}"></label><div class="linha"><button class="btn pri" data-a="reagendarOk" data-id="${s.id}">Salvar</button><button class="btn" data-a="fecharModal">Cancelar</button></div>`); },
+  reagendarOk(el) { const v = $('#rg-data').value; if (!v) return; S.sessoes[el.dataset.id] = Object.assign({}, S.sessoes[el.dataset.id], { data: v, fixa: true }); salvar(); fecharModal(); ui.cronoSem = null; render(); toast('Sessão reagendada para ' + fData(v) + '.'); },
+  recalcular() { const n = recalcular(); if (n < 0) return toast('Marque pelo menos um dia de estudo nas Configurações.'); salvar(); ui.cronoSem = null; render(); toast(n ? 'O que faltava recomeça hoje, nos seus dias de estudo (' + n + (n > 1 ? ' sessões estavam atrasadas).' : ' sessão estava atrasada).') : 'Nada atrasado: o cronograma já segue a sua disponibilidade.'); },
+  restaurarDatas() { confirmar('Voltar ao plano original?', 'As datas reagendadas e recalculadas são desfeitas. As sessões feitas continuam marcadas.', 'Voltar ao original', () => { Object.values(S.sessoes).forEach(x => { delete x.data; delete x.fixa; }); S.plano.base = null; salvar(); ui.cronoSem = null; render(); }); },
+  iniciarSessao(el) { const s = sessoes().find(x => x.id === el.dataset.id); if (S.timer) { ir('sessao'); return toast('Já existe uma sessão em andamento.'); } ui.pre = { sessaoId: s.id, marco: s.marco, tipo: s.tipo }; ir('sessao'); },
+  drillDe(el) { const r = S.registros.find(x => x.id === el.dataset.id); ui.pre = { marco: r.marco, tipo: 'Drill', nota: r.travei }; ir('sessao'); },
+  dispensar(el) { S.dispensados[el.dataset.id] = true; salvar(); render(); },
+  limparPre() { ui.pre = null; render(); },
+  tipoSel(el) { ui.pre = Object.assign({}, ui.pre, { tipo: el.dataset.id, marco: $('#s-marco').value }); el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('lig', b === el)); },
+  durSel(el) { $('#s-dur').value = el.dataset.id; },
+  iniciarTimer() {
+    const dur = Math.max(1, Math.min(240, parseInt($('#s-dur').value, 10) || S.config.pomodoro)), tipo = ($('#s-tipo .lig') || {}).dataset.id || 'Direto';
+    S.timer = { fase: 'andamento', rodando: true, marco: $('#s-marco').value, tipo, dur, fim: Date.now() + dur * 60000, rest: dur * 60000, dec: 0, sessaoId: (ui.pre || {}).sessaoId || null };
+    ui.pre = null; salvar(); render();
+  },
+  manual() { const tipo = ($('#s-tipo .lig') || {}).dataset.id || 'Direto', dur = parseInt($('#s-dur').value, 10) || S.config.pomodoro; S.timer = { fase: 'registro', rodando: false, marco: $('#s-marco').value, tipo, dur, dec: dur * 60000, sessaoId: (ui.pre || {}).sessaoId || null }; ui.pre = null; salvar(); render(); },
+  pausar() { const t = S.timer; t.rest = Math.max(0, t.fim - Date.now()); t.rodando = false; salvar(); render(); },
+  retomar() { const t = S.timer; t.fim = Date.now() + t.rest; t.rodando = true; salvar(); render(); },
+  encerrar() { const t = S.timer; t.dec = t.dur * 60000 - Math.max(0, restante(t)); t.rodando = false; t.fase = 'registro'; salvar(); render(); },
+  descartarTimer() { confirmar('Descartar esta sessão?', 'O tempo deste bloco não será registrado.', 'Descartar', () => { S.timer = null; salvar(); render(); }); },
+  registrar() {
+    const t = S.timer, min = Math.max(1, parseInt($('#r-min').value, 10) || 1);
+    S.registros.push({ id: uid(), data: hoje(), marco: t.marco, tipo: t.tipo, min, fiz: $('#r-fiz').value.trim(), travei: $('#r-travei').value.trim(), sessaoId: t.sessaoId });
+    S.dias[hoje()] = true;
+    if (t.sessaoId && $('#r-feita') && $('#r-feita').checked) S.sessoes[t.sessaoId] = Object.assign({}, S.sessoes[t.sessaoId], { feita: true, dataFeita: hoje() });
+    S.timer = null; salvar(); render(); toast('Sessão registrada: ' + fMin(min) + '.');
+  },
+  apagarReg(el) { confirmar('Apagar este registro?', 'O tempo sai das estatísticas.', 'Apagar', () => { S.registros = S.registros.filter(r => r.id !== el.dataset.id); salvar(); render(); }); },
+  revelar() { ui.revelado = true; render(); },
+  nota(el) { const c = filaFlash()[0]; if (!c) return; avaliar(c, +el.dataset.id); ui.revelado = false; salvar(); render(); },
+  novoCard() { formCard({ marco: marcoAtual().id, q: '', a: '' }); },
+  editarCard(el) { formCard(S.cards.find(c => c.id === el.dataset.id)); },
+  salvarCard(el) {
+    const q = $('#fc-q').value.trim(), a = $('#fc-a').value.trim(); if (!q || !a) return toast('Preencha a pergunta e a resposta.');
+    const id = el.dataset.id, c = id && S.cards.find(x => x.id === id);
+    if (c) Object.assign(c, { q, a, marco: $('#fc-m').value }); else S.cards.push({ id: 'c-' + uid(), marco: $('#fc-m').value, q, a, ef: 2.5, reps: 0, iv: 0, due: hoje(), visto: 0 });
+    salvar(); fecharModal(); render(); toast(c ? 'Card atualizado.' : 'Card criado. Ele entra na fila de hoje.');
+  },
+  apagarCard(el) { confirmar('Apagar este card?', 'O histórico de revisão dele se perde.', 'Apagar', () => { S.cards = S.cards.filter(c => c.id !== el.dataset.id); salvar(); render(); }); },
+  tentativa(el) { const k = el.dataset.id + '-d'; (S.recup[k] = S.recup[k] || []).push({ data: hoje(), res: el.dataset.r }); S.dias[hoje()] = true; salvar(); render(); toast('Tentativa registrada.'); },
+  recallAbrir(el) { ui.recall[el.dataset.id] = true; render(); },
+  recall(el) { S.recup[el.dataset.id] = { res: el.dataset.r, data: hoje() }; ui.recall[el.dataset.id] = false; salvar(); render(); },
+  recallCard(el) { const m = marco(el.dataset.m), r = m.recall[+el.dataset.i]; if (S.cards.some(c => c.q === r.q)) return toast('Esse card já existe.'); S.cards.push({ id: 'c-' + uid(), marco: m.id, q: r.q, a: r.a, ef: 2.5, reps: 0, iv: 0, due: hoje(), visto: 0 }); salvar(); render(); toast('Flashcard criado.'); },
+  novoErro() { modal(`<h2>Registrar erro</h2><label class="campo" for="er-m">Marco<select id="er-m">${optMarcos(marcoAtual().id)}</select></label>
+    <label class="campo" for="er-e">O que errei<input type="text" id="er-e" maxlength="300"></label><label class="campo" for="er-c">Causa<input type="text" id="er-c" maxlength="300"></label><label class="campo" for="er-k">Correção<input type="text" id="er-k" maxlength="300"></label>
+    <div class="linha"><button class="btn pri" data-a="salvarErro">Salvar</button><button class="btn" data-a="fecharModal">Cancelar</button></div>`); },
+  salvarErro() { const erro = $('#er-e').value.trim(); if (!erro) return toast('Descreva o erro.'); S.erros.push({ id: uid(), data: hoje(), marco: $('#er-m').value, erro, causa: $('#er-c').value.trim(), correcao: $('#er-k').value.trim() }); salvar(); fecharModal(); render(); },
+  erroCard(el) { const e = S.erros.find(x => x.id === el.dataset.id); if (e.card) return toast('O flashcard deste erro já foi criado.'); S.cards.push({ id: 'c-' + uid(), marco: e.marco, q: 'Erro: ' + e.erro + ' Qual a causa e a correção?', a: (e.causa ? 'Causa: ' + e.causa + '. ' : '') + (e.correcao ? 'Correção: ' + e.correcao : ''), ef: 2.5, reps: 0, iv: 0, due: hoje(), visto: 0 }); e.card = true; salvar(); render(); toast('Flashcard criado a partir do erro.'); },
+  apagarErro(el) { confirmar('Apagar este erro?', 'Ele sai do log.', 'Apagar', () => { S.erros = S.erros.filter(e => e.id !== el.dataset.id); salvar(); render(); }); },
+  exportar() { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' })); a.download = 'backup-' + CHAVE_STORAGE + '-' + hoje() + '.json'; document.body.appendChild(a); a.click(); a.remove(); toast('Se o download não começar, use Copiar JSON.'); } catch (e) { toast('Download indisponível aqui. Use Copiar JSON.'); } },
+  copiarBackup() { const t = $('#bk-out'); t.select(); const ok = () => toast('Backup copiado.'); try { navigator.clipboard.writeText(t.value).then(ok, () => { document.execCommand('copy'); ok(); }); } catch (e) { try { document.execCommand('copy'); ok(); } catch (e2) { toast('Selecione o texto e copie com Ctrl+C.'); } } },
+  importarTexto() { importar($('#bk-in').value); },
+  resetar() { confirmar('Resetar todo o progresso?', 'Isto apaga tarefas marcadas, registros de sessão, flashcards criados, erros e explicações. Não dá para desfazer.', 'Resetar tudo', () => { S = estadoNovo(); salvar(); aplicarTema(); render(); toast('Progresso resetado.'); }); },
+  tema(el) { S.config.tema = el.dataset.id; if (el.dataset.id === 'auto') ui.temaPosto = true; salvar(); aplicarTema(); render(); },
+  confirmaSim() { const f = ui.confirma; ui.confirma = null; fecharModal(); if (f) f(); },
+  fecharModal
+};
+function formCard(c) {
+  modal(`<h2>${c.id ? 'Editar card' : 'Novo card'}</h2><label class="campo" for="fc-m">Marco<select id="fc-m">${optMarcos(c.marco)}</select></label>
+    <label class="campo" for="fc-q">Pergunta<textarea id="fc-q" style="min-height:60px">${esc(c.q)}</textarea></label><label class="campo" for="fc-a">Resposta<textarea id="fc-a" style="min-height:60px">${esc(c.a)}</textarea></label>
+    <div class="linha"><button class="btn pri" data-a="salvarCard" data-id="${c.id || ''}">Salvar</button><button class="btn" data-a="fecharModal">Cancelar</button></div>`);
+}
+function importar(txt) {
+  let o; try { o = JSON.parse(txt); } catch (e) { return toast('Esse texto não é um JSON válido.'); }
+  if (!o || !o.config || !Array.isArray(o.cards) || !Array.isArray(o.registros)) return toast('O arquivo não parece um backup deste app.');
+  confirmar('Importar este backup?', 'O progresso atual será substituído pelo do backup.', 'Importar', () => { S = Object.assign(estadoNovo(), o); migrar(); salvar(); aplicarTema(); render(); toast('Backup importado.'); });
+}
+
+/* ---------- mudanças em campos ---------- */
+const C = {
+  tarefa(el) { S.tarefas[el.dataset.id] = el.checked; if (el.checked) S.dias[hoje()] = true; salvar(); render(); },
+  aula(el) { S.aulas[el.dataset.id] = el.checked; salvar(); render(); },
+  filtroCard(el) { ui.filtroCard = el.value; render(); },
+  filtroErro(el) { ui.filtroErro = el.value; render(); },
+  cfg(el) { const k = el.dataset.id; if (k === 'inicio') { if (!el.value) return; S.config.inicio = el.value; S.plano.base = null; ui.cronoSem = null; } else S.config[k] = Math.max(1, parseInt(el.value, 10) || 1); salvar(); toast('Configuração salva.'); },
+  disp(el) { const d = S.config.disp[el.dataset.id], k = el.dataset.k; d[k] = k === 'ativo' ? el.checked : k === 'min' ? Math.max(0, parseInt(el.value, 10) || 0) : el.value; ui.cronoSem = null; salvar(); toast(temDisponivel() ? (k === 'hora' ? 'Horário salvo.' : 'Cronograma ajustado à sua disponibilidade.') : 'Marque pelo menos um dia de estudo com minutos.'); },
+  importarArquivo(el) { const f = el.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => importar(r.result); r.readAsText(f); }
+};
+const I = {
+  feynman(el) { const id = el.dataset.id, v = el.value; S.feynman[id] = { texto: v, data: hoje() }; salvar(); const c = $('#fyc-' + id), b = $('#fyb-' + id); if (c) c.textContent = v.trim().length + ' caracteres (mínimo 40)'; if (b) b.disabled = v.trim().length < 40; },
+  buscaErro(el) { ui.buscaErro = el.value; const p = el.selectionStart; render(); const n = $('#e-busca'); n.focus(); n.setSelectionRange(p, p); }
+};
+
+/* ---------- início ---------- */
+document.addEventListener('click', e => { const el = e.target.closest('[data-a]'); if (el && A[el.dataset.a]) { if (el.tagName === 'BUTTON') e.preventDefault(); A[el.dataset.a](el); } else if (e.target.id === 'modal') fecharModal(); });
+document.addEventListener('change', e => { const el = e.target.closest('[data-c]'); if (el && C[el.dataset.c]) C[el.dataset.c](el); });
+document.addEventListener('input', e => { const el = e.target.closest('[data-i]'); if (el && I[el.dataset.i]) I[el.dataset.i](el); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('header[data-a]')) { e.preventDefault(); e.target.click(); } });
+window.addEventListener('hashchange', () => { ui.revelado = false; render(); $('#principal').scrollTop = 0; });
+async function iniciar() {
+  carregar();
+  if (/^https?:$/.test(location.protocol) && /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) {
+    try {
+      const info = await fetch('/api/info').then(r => r.ok ? r.json() : null);
+      if (info && info.app === 'estudos-revit') {
+        ARQ.ativo = true; ARQ.caminho = info.arquivo;
+        const r = await fetch('/api/estado');
+        if (r.status === 200) { S = Object.assign(estadoNovo(), await r.json()); migrar(); }
+        ARQ.status = r.status === 200 ? 'Progresso carregado do arquivo' : 'Arquivo novo: o progresso começa a ser salvo agora';
+        salvarArquivo(true);
+        setInterval(() => fetch('/api/ping').catch(() => { ARQ.erro = true; ARQ.status = 'O programa foi fechado. Abra o EstudosRevit.exe de novo para salvar.'; mostrarStatus(); }), 30000);
+        window.addEventListener('pagehide', () => { if (ARQ.pendente) navigator.sendBeacon('/api/estado', new Blob([JSON.stringify(S)], { type: 'application/json' })); });
+      }
+    } catch (e) { /* sem programa: segue só com o localStorage */ }
+  }
+  const pedido = new URLSearchParams(location.search).get('iniciar');
+  if (pedido) {
+    const s = sessoes().find(x => x.id === pedido);
+    if (s && !S.timer) ui.pre = { sessaoId: s.id, marco: s.marco, tipo: s.tipo };
+    history.replaceState(null, '', location.pathname + '#sessao');
+  }
+  Armazenamento.aoMudar(k => { if (k === CHAVE_STORAGE) { carregar(); versao++; aplicarTema(); render(); } });
+  aplicarTema(); ui.abertos[marcoAtual().id] = true; render(); mostrarStatus(); setInterval(tick, 500);
+}
+iniciar();
+</script>
+</body>
+</html>
