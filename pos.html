@@ -289,6 +289,7 @@ details.explain > summary { cursor: pointer; } details.explain summary h3 { disp
 
   <script src="js/config.js"></script>
 <script src="js/armazenamento.js"></script>
+  <script src="dados/pos-grade.js"></script>
   <script src="js/pos-nucleo.js"></script>
   <script>
 /* ui.js — componentes de interface: modal, formulário genérico, confirmação, toast, gráficos */
@@ -761,7 +762,7 @@ const App = (() => {
   App.views.grade = { title: 'Grade curricular', render };
 
   function topicRow(t, d) {
-    const w = L.watchedOf(t), sub = t.subtopics.length ? ` · ${t.subtopics.filter(x => x.done).length}/${t.subtopics.length} subtópicos` : '';
+    const w = L.watchedOf(t), sub = t.subtopics.length && !t.fromGrade ? ` · ${t.subtopics.filter(x => x.done).length}/${t.subtopics.length} subtópicos` : '';
     return `<li class="topic ${w >= t.lessons ? 'complete' : ''}"><div class="grow"><button class="link" data-act="topic-detail" data-id="${t.id}">${e(t.name)}</button>
         <small>${UI.badge(L.STATUS_LABEL[t.status], 'st-' + t.status)} ${UI.prioBadge(t.priority)} ${t.difficulty === 3 ? UI.badge('Difícil', 'warn') : ''}${t.notes ? ' · ✎ anotações' : ''}${t.links.length ? ` · 🔗 ${t.links.length}` : ''}${sub}</small></div>
       <div class="stepper" aria-label="Aulas assistidas"><button class="icon-btn" data-act="topic-step" data-id="${t.id}" data-n="-1" aria-label="Menos uma aula" ${t.watched <= 0 || t.status === 'dominado' ? 'disabled' : ''}>−</button><span>${w}/${t.lessons} aulas</span><button class="icon-btn" data-act="topic-step" data-id="${t.id}" data-n="1" aria-label="Mais uma aula" ${w >= t.lessons ? 'disabled' : ''}>+</button></div>
@@ -853,7 +854,7 @@ const App = (() => {
   function topicDetail(id) {
     const t = L.topic(id), d = L.discipline(t.disciplineId);
     const body = () => `<p class="muted">${e(d.name)} · ${UI.badge(L.STATUS_LABEL[t.status], 'st-' + t.status)} · ${L.watchedOf(t)}/${t.lessons} aulas${L.practiceTarget(t) ? ` · prática ${U.fmtMin(t.practiceMin || 0)}/${U.fmtMin(L.practiceTarget(t))}` : ''}${t.nextReviewAt ? ` · próxima revisão ${U.fmtDate(t.nextReviewAt)}` : ''}</p>
-      <h4 class="sub">Subtópicos</h4>
+      <h4 class="sub">${t.fromGrade ? 'Aulas (grade do portal)' : 'Subtópicos'}</h4>
       ${t.subtopics.length ? `<ul class="list compact">${t.subtopics.map(s => `<li><label class="check grow"><input type="checkbox" data-sub="${s.id}" ${s.done ? 'checked' : ''}> <span class="${s.done ? 'strike' : ''}">${e(s.text)}</span></label><button class="icon-btn" data-subdel="${s.id}" aria-label="Excluir subtópico">✕</button></li>`).join('')}</ul>` : '<p class="muted">Nenhum subtópico.</p>'}
       <div class="inline-add"><input type="text" id="sub-new" placeholder="Novo subtópico" aria-label="Novo subtópico"><button class="btn sm" data-subadd>Adicionar</button></div>
       <h4 class="sub">Links e materiais</h4>
@@ -862,7 +863,7 @@ const App = (() => {
       <h4 class="sub">Anotações</h4><textarea id="topic-notes" rows="5" placeholder="Resumo, dúvidas, comandos do software…" aria-label="Anotações">${e(t.notes)}</textarea>`;
     const m = UI.modal({ title: t.name, wide: true, body: body(), footer: `<button class="btn ghost" data-edit>Editar assunto</button><span class="spacer"></span><button class="btn primary" data-close>Concluir</button>`, onClose: () => App.commit() });
     const keep = () => { const n = m.body.querySelector('#topic-notes'); if (n) t.notes = n.value; };
-    const redraw = () => { keep(); Store.save(); m.set(body()); };
+    const redraw = () => { keep(); L.syncAulas(t); Store.save(); m.set(body()); };
     m.body.addEventListener('input', ev => { if (ev.target.id === 'topic-notes') { t.notes = ev.target.value; } });
     m.body.addEventListener('change', ev => { const el = ev.target; if (el.dataset.sub) { t.subtopics.find(s => s.id === el.dataset.sub).done = el.checked; redraw(); } });
     m.body.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; if (ev.target.id === 'sub-new') m.body.querySelector('[data-subadd]').click(); if (ev.target.id === 'link-url' || ev.target.id === 'link-label') m.body.querySelector('[data-linkadd]').click(); });

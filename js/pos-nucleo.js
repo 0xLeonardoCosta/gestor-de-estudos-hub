@@ -130,9 +130,10 @@ const Store = (() => {
     let raw = null;
     try { raw = Armazenamento.ler(KEY); } catch (e) { console.error('Armazenamento indisponível ou dados corrompidos.', e); }
     if (raw) {
-      try { api.state = normalize(raw); return; } catch (e) { console.error('Dados corrompidos; recriando.', e); }
+      try { api.state = normalize(raw); if (Grade.aplicar(api.state)) api.save(); return; } catch (e) { console.error('Dados corrompidos; recriando.', e); }
     }
     api.state = Seed.build(); // somente no primeiro acesso
+    Grade.aplicar(api.state);
     api.save();
   };
 
@@ -159,10 +160,10 @@ const Store = (() => {
     const obj = JSON.parse(text);
     const data = obj && obj.data ? obj.data : obj;
     if (!data || !Array.isArray(data.courses) || !Array.isArray(data.disciplines)) throw new Error('Arquivo de backup inválido.');
-    api.state = normalize(data); api.state.firstRun = false; api.save();
+    api.state = normalize(data); api.state.firstRun = false; Grade.aplicar(api.state); api.save();
   };
 
-  api.reset = () => { api.state = Seed.build(); api.save(); };
+  api.reset = () => { api.state = Seed.build(); Grade.aplicar(api.state); api.save(); };
   return api;
 })();
 /* logic.js — regras de negócio: progresso, notas, situação, revisão espaçada, sessões */
@@ -282,8 +283,20 @@ const L = (() => {
   }
   function watch(t, n, rating) {
     t.watched = U.clamp(t.watched + n, 0, t.lessons);
+    if (t.fromGrade) { // aulas do portal: marca/desmarca a próxima aula da lista
+      if (n > 0) t.subtopics.filter(x => !x.done).slice(0, n).forEach(x => { x.done = true; });
+      else if (n < 0) t.subtopics.filter(x => x.done).slice(n).forEach(x => { x.done = false; });
+      t.watched = t.subtopics.filter(x => x.done).length;
+    }
     if (rating) t.selfRating = rating;
     if (t.watched < t.lessons) { t.studiedAt = ''; }
+    autoStatus(t);
+  }
+  /** Assunto vindo da grade do portal: a lista de aulas (subtópicos) manda na contagem. */
+  function syncAulas(t) {
+    if (!t.fromGrade) return;
+    t.lessons = Math.max(1, t.subtopics.length);
+    t.watched = t.subtopics.filter(x => x.done).length;
     autoStatus(t);
   }
   function setStatus(t, status) {
@@ -326,7 +339,49 @@ const L = (() => {
 
   return { STATUS, STATUS_LABEL, LEVEL, DIFF, RATING, SESSION_TYPES, ASSESS_TYPES, course, disciplines, discipline, topics, topic, assessments, courseTopics, courseAssessments, inCourse,
     watchedOf, practiceTarget, practiceLeft, discStats, grade, situation, courseStats, sessions, minutesOn, minutesBetween, dailyGoal, weeklyGoal, logSession,
-    ensureReview, doReview, autoStatus, watch, setStatus, addPractice, removeTopic, removeDiscipline, removeCourse };
+    ensureReview, doReview, autoStatus, watch, syncAulas, setStatus, addPractice, removeTopic, removeDiscipline, removeCourse };
+})();
+/* grade.js — aplica a grade real do portal (dados/pos-grade.js) sobre os dados salvos */
+const Grade = (() => {
+  /** Aplica cada disciplina de window.POS_GRADE cuja versão ainda não está no estado. Devolve true se mudou algo. */
+  function aplicar(s) {
+    const G = window.POS_GRADE || {};
+    let mudou = false;
+    Object.entries(G).forEach(([did, g]) => {
+      const d = s.disciplines.find(x => x.id === did);
+      if (!d || d.gradeVersao === g.versao) return;
+      const antes = s.topics.filter(t => t.disciplineId === did), usados = new Set();
+      g.unidades.forEach((u, i) => {
+        let t = antes.find(x => x.name === u.nome);
+        if (!t) { t = Seed.newTopic(did, u.nome, i + 1, u.aulas.length); s.topics.push(t); }
+        usados.add(t.id);
+        // aula já marcada no app continua marcada, mesmo que o portal ainda não mostre
+        const ja = new Set(t.fromGrade ? t.subtopics.filter(x => x.done).map(x => x.text) : []);
+        t.order = i + 1; t.fromGrade = true;
+        t.subtopics = u.aulas.map(a => ({ id: U.uid(), text: a.nome, done: !!a.feita || ja.has(a.nome) }));
+        L.syncAulas(t);
+      });
+      // assuntos estimados pelo seed que não existem no portal saem (sessões registradas ficam, sem o assunto)
+      antes.filter(t => !usados.has(t.id)).forEach(t => {
+        s.topics = s.topics.filter(x => x !== t);
+        s.reviewLog = s.reviewLog.filter(r => r.topicId !== t.id);
+        s.sessions.concat(s.practices).forEach(x => { if (x.topicId === t.id) x.topicId = ''; });
+        ['L:', 'P:', 'R:'].forEach(k => { delete s.plan.pins[k + t.id]; delete s.plan.snooze[k + t.id]; });
+      });
+      g.avaliacoes.forEach(a => {
+        let x = s.assessments.find(y => y.disciplineId === did && y.title === a.titulo);
+        if (!x) { x = { id: U.uid(), disciplineId: did, type: a.tipo, title: a.titulo, due: '', points: a.pontos, score: null, estMin: a.min, delivered: false }; s.assessments.push(x); }
+        x.points = a.pontos;
+        if (a.entregue) x.delivered = true;
+      });
+      const aulas = U.sum(g.unidades, u => u.aulas.length);
+      d.lessonMin = Math.round(d.hours * 60 / aulas); // as horas da disciplina se dividem pelas aulas reais
+      d.gradeVersao = g.versao;
+      mudou = true;
+    });
+    return mudou;
+  }
+  return { aplicar };
 })();
 /* planner.js — planejamento inteligente (lógica própria, sem IA externa).
  *
