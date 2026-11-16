@@ -13,9 +13,10 @@
   <header class="topo">
     <div><h1>Gestor de estudos</h1><p id="hoje-txt"></p></div>
     <div class="linha">
-      <span class="local" title="A sincronização entre computadores entra quando o Supabase for ligado. Até lá, use o backup único para levar os dados de um computador para o outro.">Dados salvos neste navegador</span>
+      <span class="local" id="st-sync" role="status"></span>
       <button class="btn" data-a="backup">Backup</button>
       <button class="btn" data-a="tema" id="btn-tema"></button>
+      <button class="btn" data-a="sair" id="btn-sair" hidden>Sair</button>
     </div>
   </header>
   <nav class="frentes" id="frentes" aria-label="Frentes de estudo"></nav>
@@ -25,6 +26,7 @@
 <div id="modal" role="dialog" aria-modal="true"><div class="cx" id="modal-cx"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="js/config.js"></script>
 <script src="js/armazenamento.js"></script>
 <script src="js/ultra-nucleo.js"></script>
 <script src="dados/civil3d.js"></script>

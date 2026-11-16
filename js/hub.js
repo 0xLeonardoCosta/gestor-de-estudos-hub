@@ -255,6 +255,19 @@ function render() {
   $('#agenda').innerHTML = vAgenda();
   $('#disp').innerHTML = vDisp();
 }
+const TXT_SYNC = {
+  local: ['Dados salvos neste navegador', 'Sem Supabase configurado (js/config.js): nada sai deste navegador. Use o Backup para levar os dados a outro computador.'],
+  conectando: ['Conectando…', ''],
+  sincronizado: ['Sincronizado', 'Tudo o que você fez já está na nuvem.'],
+  salvando: ['Salvando…', 'Enviando as últimas alterações.'],
+  offline: ['Sem conexão · salvo neste navegador', 'As alterações ficam guardadas aqui e sobem sozinhas quando a conexão voltar.']
+};
+function mostrarSync() {
+  const el = $('#st-sync'), s = TXT_SYNC[Armazenamento.status] || TXT_SYNC.local;
+  el.textContent = s[0] + (Armazenamento.email && Armazenamento.status === 'sincronizado' ? ' · ' + Armazenamento.email : ''); el.title = s[1];
+  el.style.color = Armazenamento.status === 'offline' ? 'var(--aviso)' : '';
+  $('#btn-sair').hidden = !Armazenamento.remoto;
+}
 function aplicarTema() { const r = document.documentElement; if (!H.tema || H.tema === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', H.tema); }
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 3200); }
 function modal(html) { $('#modal-cx').innerHTML = html; $('#modal').classList.add('on'); const f = $('#modal-cx input,#modal-cx select,#modal-cx textarea,#modal-cx button'); if (f) f.focus(); }
@@ -355,6 +368,12 @@ const A = {
     } catch (e) { fecharModal(); return toast('Não foi possível importar: ' + (e.message || 'erro ao salvar') + '.'); }
     fecharModal(); carregar(); aplicarTema(); ui.semana = null; render(); toast('Backup importado.');
   },
+  async sair(el) {
+    const forcar = el.dataset.forcar === '1';
+    if (!forcar && !(await Armazenamento.sair())) modal(`<h2>Há alterações que ainda não subiram</h2><p>Sem conexão, não deu para enviar tudo. Se sair agora, o que foi feito por último neste navegador se perde.</p>
+      <div class="linha"><button class="btn per" data-a="sair" data-forcar="1">Sair mesmo assim</button><button class="btn" data-a="fecharModal">Ficar</button></div>`);
+    else if (forcar) Armazenamento.sair(true);
+  },
   fecharModal
 };
 
@@ -376,9 +395,10 @@ document.addEventListener('click', e => { const el = e.target.closest('[data-a]'
 document.addEventListener('change', e => { const el = e.target.closest('[data-c]'); if (el && C[el.dataset.c]) C[el.dataset.c](el); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
 /* outra aba (um dos apps) salvou: recarrega e redesenha, a menos que haja um diálogo aberto */
-Armazenamento.aoMudar(() => { if (!$('#modal').classList.contains('on')) { carregar(); aplicarTema(); render(); } });
-window.addEventListener('pageshow', e => { if (e.persisted) { carregar(); render(); } });
+Armazenamento.aoMudar(() => { if (H && !$('#modal').classList.contains('on')) { carregar(); aplicarTema(); render(); } });
+window.addEventListener('pageshow', e => { if (e.persisted && H) { carregar(); render(); } });
 let diaAberto = hoje();
-setInterval(() => { if (hoje() !== diaAberto) { diaAberto = hoje(); carregar(); render(); } }, 60000);
+setInterval(() => { if (H && hoje() !== diaAberto) { diaAberto = hoje(); carregar(); render(); } }, 60000);
 
-carregar(); aplicarTema(); render();
+Armazenamento.aoMudarStatus(mostrarSync);
+Armazenamento.pronto().then(() => { carregar(); aplicarTema(); render(); mostrarSync(); });

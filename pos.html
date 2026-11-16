@@ -284,7 +284,8 @@ details.explain > summary { cursor: pointer; } details.explain summary h3 { disp
     <main id="view"></main>
   </div>
 
-  <script src="js/armazenamento.js"></script>
+  <script src="js/config.js"></script>
+<script src="js/armazenamento.js"></script>
   <script src="js/pos-nucleo.js"></script>
   <script>
 /* ui.js — componentes de interface: modal, formulário genérico, confirmação, toast, gráficos */
@@ -1273,6 +1274,6 @@ const Timer = (() => {
   });
 })();
 </script>
-  <script>App.init();</script>
+  <script>Armazenamento.pronto().then(App.init);</script>
 </body>
 </html>

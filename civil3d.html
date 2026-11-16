@@ -189,6 +189,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--tint
 </div>
 <div id="modal" role="dialog" aria-modal="true"><div class="cx" id="modal-cx"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="js/config.js"></script>
 <script src="js/armazenamento.js"></script>
 <script src="js/ultra-nucleo.js"></script>
 <script src="dados/civil3d.js"></script>
@@ -719,6 +720,7 @@ document.addEventListener('input', e => { const el = e.target.closest('[data-i]'
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('header[data-a]')) { e.preventDefault(); e.target.click(); } });
 window.addEventListener('hashchange', () => { ui.revelado = false; render(); $('#principal').scrollTop = 0; });
 async function iniciar() {
+  await Armazenamento.pronto();          // com Supabase ligado: confere o login e baixa o progresso
   carregar();
   if (/^https?:$/.test(location.protocol) && /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) {
     try {

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Gestor de estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/hub.css">
+<style>
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  form{width:100%;max-width:380px}
+  form input{padding:9px 11px;font-size:16px}
+  form .btn{padding:10px 13px;font-size:15px}
+  #erro{color:var(--critico);font-size:14px;min-height:21px}
+</style>
+</head>
+<body>
+<form class="cartao" id="form" novalidate>
+  <div><h1>Gestor de estudos</h1><p class="suave">Entre para carregar o seu progresso.</p></div>
+  <label class="campo" for="email">E-mail<input type="email" id="email" autocomplete="username" required autofocus></label>
+  <label class="campo" for="senha">Senha<input type="password" id="senha" autocomplete="current-password" required></label>
+  <p id="erro" role="alert"></p>
+  <button class="btn pri" type="submit" id="entrar">Entrar</button>
+</form>
+<script src="js/config.js"></script>
+<script src="js/armazenamento.js"></script>
+<script>
+/* só aceita voltar para uma página deste site (ex.: civil3d.html?iniciar=s3#sessao) */
+const pedido = new URLSearchParams(location.search).get('voltar') || '';
+const destino = /^[a-z0-9]+\.html([?#][^\s]*)?$/i.test(pedido) && !/^login\.html/i.test(pedido) ? pedido : 'index.html';
+const $ = s => document.querySelector(s);
+
+if (!Armazenamento.remoto) location.replace('index.html');             // sem Supabase configurado não há login
+else Armazenamento.temSessao().then(sim => { if (sim) location.replace(destino); });
+
+$('#form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#email').value.trim(), senha = $('#senha').value;
+  if (!email || !senha) { $('#erro').textContent = 'Preencha o e-mail e a senha.'; return; }
+  $('#entrar').disabled = true; $('#entrar').textContent = 'Entrando…'; $('#erro').textContent = '';
+  const erro = await Armazenamento.entrar(email, senha);
+  if (!erro) return location.replace(destino);
+  $('#erro').textContent = erro; $('#entrar').disabled = false; $('#entrar').textContent = 'Entrar';
+});
+</script>
+</body>
+</html>
